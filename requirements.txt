@@ -1,0 +1,10 @@
+groq>=1.0,<2
+sounddevice>=0.5,<1
+scipy>=1.14,<2
+numpy>=2,<3
+keyboard>=0.13,<1
+pyautogui>=0.9,<1
+pyperclip>=1.9,<2
+python-dotenv>=1,<2
+Pillow>=11,<13
+pystray>=0.19,<1

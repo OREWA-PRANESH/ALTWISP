@@ -1,0 +1,37 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build and release output
+src/build/
+src/dist/
+build/
+dist/
+*.exe
+*.msi
+*.spec.bak
+
+# Local models, recordings, and application data
+models/
+*.wav
+*.db
+*.db-shm
+*.db-wal
+
+# Editor and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
