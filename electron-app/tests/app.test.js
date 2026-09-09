@@ -1,0 +1,10 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+test('renderer uses an isolated preload bridge',()=>{const main=fs.readFileSync(path.join(root,'electron/main.js'),'utf8');assert.match(main,/contextIsolation:\s*true/);assert.doesNotMatch(main,/nodeIntegration:\s*true/)});
+test('overlay cannot steal focus or mouse input',()=>{const main=fs.readFileSync(path.join(root,'electron/main.js'),'utf8');assert.match(main,/focusable:\s*false/);assert.match(main,/setIgnoreMouseEvents\(true\)/);assert.match(main,/showInactive\(\)/)});
+test('overlay stays compact and fully transparent',()=>{const main=fs.readFileSync(path.join(root,'electron/main.js'),'utf8');const html=fs.readFileSync(path.join(root,'renderer/overlay.html'),'utf8');assert.match(main,/width:\s*58, height:\s*58/);assert.match(main,/backgroundColor:\s*'#00000000'/);assert.doesNotMatch(html,/class="halo"/)});
+test('dashboard includes every product surface',()=>{const js=fs.readFileSync(path.join(root,'renderer/app.js'),'utf8');for(const page of ['home','history','dictionary','snippets','settings'])assert.match(js,new RegExp(`'${page}'`))});
+test('worker toggles on full modifier release',()=>{const py=fs.readFileSync(path.join(root,'native/agent.py'),'utf8');assert.match(py,/self\.armed and not self\.pressed/);assert.match(py,/\{'ctrl','windows'\}/)});

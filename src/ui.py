@@ -1,328 +1,135 @@
-import queue
-import sys
-import tkinter as tk
+"""Complete PySide6 dashboard for ALTWISP."""
+import os, queue
 from datetime import datetime
-from tkinter import filedialog, messagebox, ttk
+from pathlib import Path
+_qt=Path(__file__).resolve().parent.parent/'venv'/'Lib'/'site-packages'/'PySide6'; _dll=[]
+for _d in (_qt,_qt.parent/'shiboken6'):
+    if _d.exists() and hasattr(os,'add_dll_directory'): _dll.append(os.add_dll_directory(str(_d)))
+from PySide6.QtCore import Qt,QTimer
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QApplication,QCheckBox,QComboBox,QFileDialog,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,QLineEdit,QMainWindow,QMessageBox,QPushButton,QScrollArea,QStackedWidget,QTableWidget,QTableWidgetItem,QTextEdit,QVBoxLayout,QWidget
+from qt_orb import OrbOverlay
 
-from orb import ReactiveOrb
+BG='#F4F6FA'; INK='#142033'; MUTED='#6C788A'; BLUE='#4C6FFF'; NAVY='#111C2B'; BORDER='#E2E7F0'
 
+def label(text,size=12,color=INK,weight=QFont.Weight.Normal):
+    w=QLabel(text); w.setFont(QFont('Segoe UI',size,weight)); w.setStyleSheet(f'color:{color};background:transparent'); return w
+def btn(text,kind='secondary'):
+    b=QPushButton(text); b.setCursor(Qt.CursorShape.PointingHandCursor); b.setProperty('kind',kind); return b
+def card():
+    c=QFrame(); c.setObjectName('card'); return c
+def field():
+    x=QLineEdit(); x.setMinimumHeight(42); return x
 
-BG = "#0b1020"
-PANEL = "#131a2c"
-CARD = "#1a2338"
-TEXT = "#f4f7ff"
-MUTED = "#9aa8c1"
-ACCENT = "#6ee7d2"
-BLUE = "#73a7ff"
-DANGER = "#ff7b8b"
+STYLE='''QMainWindow,QWidget#app{background:#F4F6FA;font-family:"Segoe UI"} QFrame#side{background:#111C2B} QFrame#card{background:white;border:1px solid #E2E7F0;border-radius:14px} QLabel{color:#142033} QPushButton{border:0;border-radius:9px;padding:11px 15px;font:600 12px "Segoe UI"} QPushButton[kind="primary"]{background:#4C6FFF;color:white} QPushButton[kind="primary"]:hover{background:#3E5AE2} QPushButton[kind="secondary"]{background:#EEF1F7;color:#142033} QPushButton[kind="secondary"]:hover{background:#E3E8F2} QPushButton[kind="nav"]{background:transparent;color:#AAB7C7;text-align:left;padding:13px 15px} QPushButton[kind="nav"]:hover{background:#1B2A3D;color:white} QPushButton[kind="nav"][active="true"]{background:#263853;color:white} QLineEdit,QTextEdit,QComboBox{background:white;border:1px solid #DCE2EC;border-radius:9px;padding:9px;color:#142033;selection-background-color:#4C6FFF} QLineEdit:focus,QTextEdit:focus,QComboBox:focus{border:1px solid #4C6FFF} QTableWidget{background:white;border:0;gridline-color:#EDF0F5;color:#142033;selection-background-color:#E8EDFF;selection-color:#142033} QHeaderView::section{background:#F7F8FB;color:#6C788A;border:0;border-bottom:1px solid #E2E7F0;padding:10px;font-weight:600} QScrollArea{border:0;background:transparent} QCheckBox{spacing:9px;color:#142033}'''
 
+class Dashboard(QMainWindow):
+    def __init__(self,ui):
+        super().__init__(); self.ui=ui; self.setWindowTitle('ALTWISP · Your voice, in flow'); self.resize(1120,780); self.setMinimumSize(940,680); self.setStyleSheet(STYLE)
+        root=QWidget(); root.setObjectName('app'); self.setCentralWidget(root); outer=QHBoxLayout(root); outer.setContentsMargins(0,0,0,0); outer.setSpacing(0)
+        self.side=QFrame(); self.side.setObjectName('side'); self.side.setFixedWidth(220); sl=QVBoxLayout(self.side); sl.setContentsMargins(18,28,18,20); sl.setSpacing(5)
+        brand=label('◉  ALTWISP',18,'#F7FAFF',QFont.Weight.Bold); sl.addWidget(brand); sl.addWidget(label('Voice that keeps up.',10,'#8495AA')); sl.addSpacing(28); self.nav={}
+        for name,icon in [('Home','⌂'),('History','≡'),('Dictionary','Aa'),('Snippets','↗'),('Settings','⚙')]:
+            b=btn(f'{icon}   {name}','nav'); b.clicked.connect(lambda checked=False,n=name:self.open_page(n)); sl.addWidget(b); self.nav[name]=b
+        sl.addStretch(); sl.addWidget(label('Ctrl + Windows',10,'#8292A7',QFont.Weight.Bold)); sl.addWidget(label('Start · stop dictation',9,'#66778C')); sl.addSpacing(16); quitb=btn('Quit ALTWISP','nav'); quitb.clicked.connect(ui.callbacks.get('quit',lambda:None)); sl.addWidget(quitb); outer.addWidget(self.side)
+        body=QWidget(); body_l=QVBoxLayout(body); body_l.setContentsMargins(34,27,34,22); body_l.setSpacing(14); top=QHBoxLayout(); self.breadcrumb=label('Workspace  /  Home',10,MUTED); top.addWidget(self.breadcrumb); top.addStretch(); self.status=label('●  Ready when you are',10,'#277A61',QFont.Weight.DemiBold); self.status.setStyleSheet('color:#277A61;background:#E7F5EF;border-radius:8px;padding:8px 12px'); top.addWidget(self.status); body_l.addLayout(top)
+        self.error=QFrame(); self.error.setObjectName('error'); self.error.setStyleSheet('QFrame#error{background:#FFF1E8;border:1px solid #FFD5BB;border-radius:10px}'); er=QHBoxLayout(self.error); self.error_text=label('',10,'#884515'); er.addWidget(self.error_text,1); retry=btn('Retry','secondary'); retry.clicked.connect(ui.callbacks.get('retry',lambda:None)); er.addWidget(retry); discard=btn('Discard','secondary'); discard.clicked.connect(ui.callbacks.get('discard',lambda:None)); er.addWidget(discard); close=btn('×','secondary'); close.clicked.connect(self.error.hide); er.addWidget(close); self.error.hide(); body_l.addWidget(self.error)
+        self.stack=QStackedWidget(); body_l.addWidget(self.stack,1); outer.addWidget(body,1); self.pages={}; self.builders={'Home':self.home,'History':self.history,'Dictionary':lambda:self.entries('dictionary'),'Snippets':lambda:self.entries('snippets'),'Settings':self.settings_page}; self.open_page('Home')
+    def closeEvent(self,event): event.ignore(); self.hide()
+    def open_page(self,name):
+        if name not in self.pages: self.pages[name]=self.builders[name](); self.stack.addWidget(self.pages[name])
+        self.stack.setCurrentWidget(self.pages[name]); self.ui.current_page=name; self.breadcrumb.setText(f'Workspace  /  {name}')
+        for n,b in self.nav.items(): b.setProperty('active','true' if n==name else 'false'); b.style().unpolish(b); b.style().polish(b)
+        if hasattr(self.ui,'root'): self.ui.refresh()
+    def page_shell(self,title,subtitle):
+        w=QWidget(); l=QVBoxLayout(w); l.setContentsMargins(0,0,0,0); l.setSpacing(14); l.addWidget(label(title,26,INK,QFont.Weight.Bold)); l.addWidget(label(subtitle,11,MUTED)); return w,l
+    def home(self):
+        w,l=self.page_shell('Less typing. More you.','A calm command center for every thought you speak.'); hero=card(); h=QHBoxLayout(hero); h.setContentsMargins(26,22,24,22); left=QVBoxLayout(); left.addWidget(label('YOUR VOICE · ANY TEXT BOX',9,'#526AA0',QFont.Weight.Bold)); left.addWidget(label('Say it. Let it flow.',22,'#243B78',QFont.Weight.Bold)); left.addWidget(label('Select a text box and release  Ctrl + Windows\nRepeat the same gesture to finish.',11,'#60729B')); h.addLayout(left,1); from qt_orb import ReactiveOrb; self.hero_orb=ReactiveOrb(82); h.addWidget(self.hero_orb); l.addWidget(hero)
+        metrics=QHBoxLayout(); self.metric_values={};
+        for key,title in [('words','WORDS DICTATED'),('dictations','RECORDINGS'),('wpm','WORDS / MIN')]:
+            c=card(); x=QVBoxLayout(c); x.setContentsMargins(20,16,20,16); x.addWidget(label(title,9,MUTED,QFont.Weight.DemiBold)); v=label('—',22,INK,QFont.Weight.Bold); x.addWidget(v); self.metric_values[key]=v; metrics.addWidget(c)
+        l.addLayout(metrics); latest=card(); ll=QVBoxLayout(latest); head=QHBoxLayout(); head.addWidget(label('Your latest words',12,INK,QFont.Weight.DemiBold)); head.addStretch(); copy=btn('Copy text','secondary'); copy.clicked.connect(self.copy_latest); head.addWidget(copy); ll.addLayout(head); self.latest=QTextEdit(); self.latest.setMinimumHeight(145); ll.addWidget(self.latest); l.addWidget(latest,1); return w
+    def history(self):
+        w,l=self.page_shell('History','Everything you dictated, kept useful and easy to find.'); bar=QHBoxLayout(); bar.addStretch(); export=btn('Export JSON','secondary'); export.clicked.connect(self.export_history); bar.addWidget(export); clear=btn('Clear history','secondary'); clear.clicked.connect(self.clear_history); bar.addWidget(clear); l.addLayout(bar); self.history_table=QTableWidget(0,3); self.history_table.setHorizontalHeaderLabels(['WHEN','TRANSCRIPT','WORDS']); self.history_table.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch); self.history_table.verticalHeader().hide(); self.history_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.history_table.setAlternatingRowColors(True); l.addWidget(self.history_table,1); return w
+    def entries(self,table):
+        title='Dictionary' if table=='dictionary' else 'Snippets'; sub='Teach ALTWISP names, terms and replacements.' if table=='dictionary' else 'Expand short spoken triggers into complete reusable text.'; w,l=self.page_shell(title,sub); form=card(); fl=QGridLayout(form); fl.setContentsMargins(18,16,18,16); a=field(); b=QTextEdit(); b.setFixedHeight(74); fl.addWidget(label('Spoken phrase' if table=='dictionary' else 'Trigger',9,MUTED),0,0); fl.addWidget(label('Replacement' if table=='dictionary' else 'Expansion',9,MUTED),0,1); fl.addWidget(a,1,0); fl.addWidget(b,1,1); save=btn('Save','primary'); fl.addWidget(save,1,2); l.addWidget(form); tree=QTableWidget(0,3); tree.setHorizontalHeaderLabels(['PHRASE','RESULT','']); tree.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch); l.addWidget(tree,1); self.entry_controls[table]=(a,b,tree); save.clicked.connect(lambda:self.save_entry(table)); return w
+    @property
+    def entry_controls(self):
+        if not hasattr(self,'_entry_controls'): self._entry_controls={}
+        return self._entry_controls
+    def settings_page(self):
+        w,l=self.page_shell('Settings','Tune how ALTWISP listens, writes and lives on this computer.')
+        engine=card(); g=QGridLayout(engine); g.setContentsMargins(22,18,22,20); g.setHorizontalSpacing(24); g.setVerticalSpacing(12)
+        g.addWidget(label('Transcription',13,INK,QFont.Weight.DemiBold),0,0,1,2)
+        self.backend=QComboBox(); self.backend.addItems(['groq','local']); self.backend.setCurrentText(self.ui.settings.transcription_backend)
+        self.model=QComboBox(); self.model.addItems(['tiny','base','small','medium','large-v3']); self.model.setCurrentText(self.ui.settings.local_model)
+        self.language=field(); self.language.setText(self.ui.settings.language)
+        self.tone=QComboBox(); self.tone.addItems(['neutral','casual','formal','concise']); self.tone.setCurrentText(self.ui.settings.style)
+        for row,(name,widget) in enumerate([('Engine',self.backend),('Local model',self.model),('Language',self.language),('Writing style',self.tone)],1):
+            widget.setFixedHeight(42)
+            g.addWidget(label(name,10,MUTED),row,0); g.addWidget(widget,row,1)
+        engine.setFixedHeight(288)
+        l.addWidget(engine)
+        privacy=card(); pv=QVBoxLayout(privacy); pv.setContentsMargins(22,18,22,20); pv.setSpacing(12); pv.addWidget(label('Privacy & startup',13,INK,QFont.Weight.DemiBold))
+        self.polish=QCheckBox('Polish transcription with AI'); self.polish.setChecked(self.ui.settings.polish_enabled)
+        self.keep=QCheckBox('Save transcription history'); self.keep.setChecked(self.ui.settings.save_history)
+        self.autostart=QCheckBox('Launch ALTWISP when I sign in'); self.autostart.setChecked(self.ui.settings.launch_at_login)
+        pv.addWidget(self.polish); pv.addWidget(self.keep); pv.addWidget(self.autostart); privacy.setFixedHeight(164); l.addWidget(privacy)
+        actions=QHBoxLayout(); actions.addWidget(label('Local mode keeps audio on this computer.',10,MUTED)); actions.addStretch(); save=btn('Save settings','primary'); save.clicked.connect(self.save_settings); actions.addWidget(save); l.addLayout(actions); l.addStretch(); return w
+    def copy_latest(self): QApplication.clipboard().setText(self.latest.toPlainText()); self.status.setText('✓  Copied to clipboard')
+    def export_history(self):
+        path,_=QFileDialog.getSaveFileName(self,'Export history','altwisp-history.json','JSON (*.json)');
+        if path:self.ui.storage.export_json(path)
+    def clear_history(self):
+        if QMessageBox.question(self,'Clear history','Permanently remove all saved transcripts?')==QMessageBox.StandardButton.Yes:self.ui.storage.delete_history(); self.ui.refresh()
+    def save_entry(self,table):
+        a,b,tree=self.entry_controls[table]; first=a.text().strip(); second=b.toPlainText().strip()
+        if not first or not second:return
+        (self.ui.storage.upsert_dictionary if table=='dictionary' else self.ui.storage.upsert_snippet)(first,second); a.clear(); b.clear(); self.ui.refresh()
+    def delete_entry(self,table,entry_id): self.ui.storage.delete_entry(table,entry_id); self.ui.refresh()
+    def save_settings(self):
+        try:
+            self.ui.callbacks['save_settings']({'backend':self.backend.currentText(),'model':self.model.currentText(),'language':self.language.text(),'style':self.tone.currentText(),'polish':self.polish.isChecked(),'history':self.keep.isChecked(),'retention':0,'autostart':self.autostart.isChecked()}); self.status.setText('✓  Settings saved')
+        except Exception as exc:self.ui.show_error('Settings not saved',str(exc))
 
 class AppUI:
-    def __init__(self, storage, settings, callbacks):
-        self.storage = storage
-        self.settings = settings
-        self.callbacks = callbacks
-        self.root = tk.Tk()
-        self.root.title("ALTWISP")
-        self.root.geometry("940x650")
-        self.root.minsize(780, 540)
-        self.root.configure(bg=BG)
-        self.root.protocol("WM_DELETE_WINDOW", self.hide_dashboard)
-        self.command_queue = queue.Queue()
-        self.status_var = tk.StringVar(value="Ready")
-        self._configure_styles()
-        self._build_dashboard()
-        self._build_overlay()
-        self.root.after(15, self._drain_commands)
-
-    def _configure_styles(self):
-        style = ttk.Style(self.root)
-        style.theme_use("clam")
-        style.configure("TFrame", background=BG)
-        style.configure("Card.TFrame", background=CARD)
-        style.configure("TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 10))
-        style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Segoe UI Semibold", 24))
-        style.configure("Muted.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 10))
-        style.configure("Card.TLabel", background=CARD, foreground=TEXT, font=("Segoe UI", 10))
-        style.configure("Metric.TLabel", background=CARD, foreground=ACCENT, font=("Segoe UI Semibold", 26))
-        style.configure("TButton", font=("Segoe UI Semibold", 10), padding=(14, 8), background=BLUE, foreground="#08101f")
-        style.map("TButton", background=[("active", "#91bcff")])
-        style.configure("TNotebook", background=BG, borderwidth=0)
-        style.configure("TNotebook.Tab", background=PANEL, foreground=MUTED, padding=(18, 10), font=("Segoe UI Semibold", 10))
-        style.map("TNotebook.Tab", background=[("selected", CARD)], foreground=[("selected", TEXT)])
-        style.configure("Treeview", background=CARD, fieldbackground=CARD, foreground=TEXT, rowheight=30, borderwidth=0)
-        style.configure("Treeview.Heading", background=PANEL, foreground=TEXT, relief="flat")
-        style.map("Treeview", background=[("selected", "#294066")])
-        style.configure("TCheckbutton", background=BG, foreground=TEXT)
-        style.configure("TCombobox", fieldbackground=CARD, background=CARD, foreground=TEXT)
-
-    def _build_dashboard(self):
-        header = ttk.Frame(self.root, padding=(24, 20, 24, 10))
-        header.pack(fill="x")
-        ttk.Label(header, text="ALTWISP", style="Title.TLabel").pack(side="left")
-        ttk.Label(header, textvariable=self.status_var, style="Muted.TLabel").pack(side="left", padx=18, pady=(9, 0))
-        ttk.Button(header, text="Start dictation", command=self.callbacks["toggle"]).pack(side="right")
-
-        self.tabs = ttk.Notebook(self.root)
-        self.tabs.pack(fill="both", expand=True, padx=24, pady=(0, 24))
-        self.home_tab = ttk.Frame(self.tabs, padding=18)
-        self.history_tab = ttk.Frame(self.tabs, padding=18)
-        self.dictionary_tab = ttk.Frame(self.tabs, padding=18)
-        self.snippets_tab = ttk.Frame(self.tabs, padding=18)
-        self.settings_tab = ttk.Frame(self.tabs, padding=18)
-        for tab, title in ((self.home_tab, "Home"), (self.history_tab, "History"), (self.dictionary_tab, "Dictionary"),
-                           (self.snippets_tab, "Snippets"), (self.settings_tab, "Settings")):
-            self.tabs.add(tab, text=title)
-        self._build_home()
-        self._build_history()
-        self._build_entries(self.dictionary_tab, "dictionary", "Spoken word", "Replacement")
-        self._build_entries(self.snippets_tab, "snippets", "Voice trigger", "Expansion")
-        self._build_settings()
-
-    def _build_home(self):
-        cards = ttk.Frame(self.home_tab)
-        cards.pack(fill="x")
-        self.metric_labels = {}
-        for key, label in (("words", "Words dictated"), ("dictations", "Dictations"), ("wpm", "Average WPM")):
-            card = ttk.Frame(cards, style="Card.TFrame", padding=20)
-            card.pack(side="left", fill="both", expand=True, padx=(0, 12))
-            value = ttk.Label(card, text="0", style="Metric.TLabel")
-            value.pack(anchor="w")
-            ttk.Label(card, text=label, style="Card.TLabel").pack(anchor="w", pady=(4, 0))
-            self.metric_labels[key] = value
-        help_card = ttk.Frame(self.home_tab, style="Card.TFrame", padding=22)
-        help_card.pack(fill="x", pady=22)
-        ttk.Label(help_card, text="Speak anywhere", style="Metric.TLabel").pack(anchor="w")
-        ttk.Label(help_card, text="Ctrl + Windows starts and stops dictation • Ctrl + Alt + D opens this dashboard • Shift + Alt + Z pastes the last result", style="Card.TLabel").pack(anchor="w", pady=(8, 0))
-        ttk.Label(help_card, text="Your dictionary, snippets, settings, and history stay on this computer.", style="Card.TLabel").pack(anchor="w", pady=(6, 0))
-
-    def _build_history(self):
-        toolbar = ttk.Frame(self.history_tab)
-        toolbar.pack(fill="x", pady=(0, 12))
-        ttk.Button(toolbar, text="Copy selected", command=self._copy_history).pack(side="left")
-        ttk.Button(toolbar, text="Export JSON", command=self._export_history).pack(side="left", padx=8)
-        ttk.Button(toolbar, text="Delete all", command=self._delete_history).pack(side="right")
-        self.history_tree = ttk.Treeview(self.history_tab, columns=("time", "text", "words"), show="headings")
-        self.history_tree.heading("time", text="Time")
-        self.history_tree.heading("text", text="Transcript")
-        self.history_tree.heading("words", text="Words")
-        self.history_tree.column("time", width=150, stretch=False)
-        self.history_tree.column("text", width=560)
-        self.history_tree.column("words", width=70, anchor="center", stretch=False)
-        self.history_tree.pack(fill="both", expand=True)
-
-    def _build_entries(self, parent, table, first_label, second_label):
-        form = ttk.Frame(parent)
-        form.pack(fill="x", pady=(0, 12))
-        first = ttk.Entry(form, width=25)
-        second = ttk.Entry(form)
-        first.pack(side="left", padx=(0, 8))
-        second.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        first.insert(0, first_label)
-        second.insert(0, second_label)
-        tree = ttk.Treeview(parent, columns=("first", "second"), show="headings")
-        tree.heading("first", text=first_label)
-        tree.heading("second", text=second_label)
-        tree.column("first", width=220)
-        tree.pack(fill="both", expand=True)
-        self.entry_widgets = getattr(self, "entry_widgets", {})
-        self.entry_widgets[table] = (first, second, tree)
-
-        def save():
-            left, right = first.get().strip(), second.get().strip()
-            if not left or not right or left == first_label or right == second_label:
-                messagebox.showwarning("ALTWISP", "Enter both fields.")
-                return
-            if table == "dictionary":
-                self.storage.upsert_dictionary(left, right)
-            else:
-                self.storage.upsert_snippet(left, right)
-            first.delete(0, "end")
-            second.delete(0, "end")
-            self.refresh()
-
-        def remove():
-            selected = tree.selection()
-            if selected:
-                self.storage.delete_entry(table, int(selected[0]))
-                self.refresh()
-
-        ttk.Button(form, text="Add / update", command=save).pack(side="left")
-        ttk.Button(form, text="Delete selected", command=remove).pack(side="left", padx=8)
-
-    def _build_settings(self):
-        form = ttk.Frame(self.settings_tab)
-        form.pack(anchor="nw", fill="x")
-        self.setting_vars = {
-            "backend": tk.StringVar(value=self.settings.transcription_backend),
-            "model": tk.StringVar(value=self.settings.local_model),
-            "language": tk.StringVar(value=self.settings.language),
-            "style": tk.StringVar(value=self.settings.style),
-            "polish": tk.BooleanVar(value=self.settings.polish_enabled),
-            "history": tk.BooleanVar(value=self.settings.save_history),
-            "autostart": tk.BooleanVar(value=self.settings.launch_at_login),
-            "retention": tk.StringVar(value=str(self.settings.auto_delete_hours)),
-        }
-        rows = [
-            ("Transcription", ttk.Combobox(form, textvariable=self.setting_vars["backend"], values=("groq", "local"), state="readonly")),
-            ("Local Whisper model", ttk.Combobox(form, textvariable=self.setting_vars["model"], values=("tiny", "base", "small", "medium"), state="readonly")),
-            ("Language", ttk.Entry(form, textvariable=self.setting_vars["language"])),
-            ("Writing style", ttk.Combobox(form, textvariable=self.setting_vars["style"], values=("neutral", "casual", "formal", "concise"), state="readonly")),
-            ("Auto-delete history after hours (0 = never)", ttk.Entry(form, textvariable=self.setting_vars["retention"])),
-        ]
-        for row, (label, widget) in enumerate(rows):
-            ttk.Label(form, text=label).grid(row=row, column=0, sticky="w", padx=(0, 20), pady=8)
-            widget.grid(row=row, column=1, sticky="ew", pady=8)
-        form.columnconfigure(1, weight=1)
-        ttk.Checkbutton(form, text="Polish transcription with AI when a Groq key is available", variable=self.setting_vars["polish"]).grid(row=6, column=0, columnspan=2, sticky="w", pady=8)
-        ttk.Checkbutton(form, text="Save transcript history locally", variable=self.setting_vars["history"]).grid(row=7, column=0, columnspan=2, sticky="w", pady=8)
-        ttk.Checkbutton(form, text="Launch ALTWISP when I sign in to Windows", variable=self.setting_vars["autostart"]).grid(row=8, column=0, columnspan=2, sticky="w", pady=8)
-        ttk.Button(form, text="Save settings", command=self._save_settings).grid(row=9, column=0, sticky="w", pady=18)
-        ttk.Button(form, text="Quit ALTWISP", command=self.callbacks["quit"]).grid(row=9, column=1, sticky="e", pady=18)
-
-    def _build_overlay(self):
-        self.overlay = tk.Toplevel(self.root)
-        self.overlay.overrideredirect(True)
-        self.overlay.attributes("-topmost", True)
-        transparent = "#010203"
-        self.overlay.configure(bg=transparent)
-        if sys.platform == "win32":
-            self.overlay.attributes("-transparentcolor", transparent)
-        width = height = 72
-        x = (self.overlay.winfo_screenwidth() - width) // 2
-        y = self.overlay.winfo_screenheight() - 128
-        self.overlay.geometry(f"{width}x{height}+{x}+{y}")
-        canvas = tk.Canvas(self.overlay, width=width, height=height, bg=transparent, highlightthickness=0, borderwidth=0)
-        canvas.pack()
-        self.overlay_canvas = canvas
-        self.orb = ReactiveOrb(canvas, size=width, fps=45)
-        self.overlay.update_idletasks()
-        self._overlay_hwnd = None
-        if sys.platform == "win32":
-            import ctypes
-            user32 = ctypes.windll.user32
-            child = self.overlay.winfo_id()
-            self._overlay_hwnd = user32.GetParent(child) or child
-            get_style = user32.GetWindowLongW
-            set_style = user32.SetWindowLongW
-            ex_style = get_style(self._overlay_hwnd, -20)
-            # WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE keeps the recorder visible
-            # without moving keyboard focus away from the user's text field.
-            set_style(self._overlay_hwnd, -20, ex_style | 0x00000080 | 0x08000000)
-        self.overlay.withdraw()
-
-    def enqueue(self, callback, *args, **kwargs):
-        self.command_queue.put((callback, args, kwargs))
-
-    def _drain_commands(self):
-        try:
-            while True:
-                callback, args, kwargs = self.command_queue.get_nowait()
-                callback(*args, **kwargs)
-        except queue.Empty:
-            pass
-        try:
-            if self.root.winfo_exists():
-                self.root.after(15, self._drain_commands)
-        except tk.TclError:
-            pass
-
-    def _save_settings(self):
-        try:
-            retention = max(0, int(self.setting_vars["retention"].get()))
-        except ValueError:
-            messagebox.showerror("ALTWISP", "History retention must be a whole number of hours.")
-            return
-        values = {key: var.get() for key, var in self.setting_vars.items()}
-        values["retention"] = retention
-        try:
-            self.callbacks["save_settings"](values)
-            self.set_status("Settings saved")
-        except Exception as exc:
-            messagebox.showerror("ALTWISP", str(exc))
-
-    def _copy_history(self):
-        selected = self.history_tree.selection()
-        if selected:
-            import pyperclip
-            pyperclip.copy(self.history_tree.item(selected[0], "values")[1])
-
-    def _export_history(self):
-        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=(("JSON", "*.json"),))
-        if path:
-            self.storage.export_json(path)
-
-    def _delete_history(self):
-        if messagebox.askyesno("ALTWISP", "Delete all local transcript history?"):
-            self.storage.delete_history()
-            self.refresh()
-
+    def __init__(self,storage,settings,callbacks):
+        self.storage,self.settings,self.callbacks=storage,settings,callbacks; self.alive=True; self.current_page='Home'; self.queue=queue.SimpleQueue(); self.app=QApplication.instance() or QApplication([]); self.app.setQuitOnLastWindowClosed(False); self.root=Dashboard(self); self.overlay=OrbOverlay(64); self.native_overlay=self.overlay; self.orb=self.overlay.orb; self.pump=QTimer(); self.pump.timeout.connect(self._drain); self.pump.start(8); self.refresh()
+    def enqueue(self,callback,*args): self.queue.put((callback,args))
+    def _drain(self):
+        for _ in range(32):
+            try: callback,args=self.queue.get_nowait()
+            except queue.Empty:return
+            try:callback(*args)
+            except Exception as exc:self.show_error('Interface error',str(exc))
+    def run(self,background=False):
+        if not background:self.show_dashboard()
+        self.app.exec()
+    def show_dashboard(self):self.root.show(); self.root.raise_(); self.root.activateWindow(); self.refresh()
+    def hide_dashboard(self):self.root.hide()
+    def show_recording(self):self.overlay.show_orb()
+    def hide_recording(self):self.overlay.hide_orb()
+    def update_waveform_from_volume(self,volume):self.orb.set_volume(volume)
+    def set_overlay_status(self,text):pass
+    def set_status(self,message,error=False):self.root.status.setText(('!  ' if error else '●  ')+message)
+    def show_error(self,title,message):self.root.error_text.setText(f'{title}\n{message}'); self.root.error.show()
+    def refresh_if_visible(self):
+        if self.root.isVisible():self.refresh()
     def refresh(self):
-        stats = self.storage.stats()
-        self.metric_labels["words"].configure(text=f"{stats['words']:,}")
-        self.metric_labels["dictations"].configure(text=f"{stats['dictations']:,}")
-        minutes = stats["seconds"] / 60
-        self.metric_labels["wpm"].configure(text=str(round(stats["words"] / minutes)) if minutes > 0 else "0")
-        for item in self.history_tree.get_children():
-            self.history_tree.delete(item)
-        for row in self.storage.recent_history():
-            timestamp = datetime.fromisoformat(row["created_at"]).astimezone().strftime("%d %b %H:%M")
-            self.history_tree.insert("", "end", iid=str(row["id"]), values=(timestamp, row["final_text"], len(row["final_text"].split())))
-        for table, (_, _, tree) in self.entry_widgets.items():
-            for item in tree.get_children():
-                tree.delete(item)
-            for row in self.storage.list_entries(table):
-                values = (row["spoken"], row["replacement"]) if table == "dictionary" else (row["trigger"], row["expansion"])
-                tree.insert("", "end", iid=str(row["id"]), values=values)
-
-    def set_status(self, status, error=False):
-        del error
-        self.enqueue(self.status_var.set, status)
-
-    def show_recording(self):
-        self.enqueue(self._show_recording_now)
-
-    def _show_recording_now(self):
-        self.orb.set_mode("listening")
-        self.orb.start()
-        if self._overlay_hwnd:
-            import ctypes
-            user32 = ctypes.windll.user32
-            user32.ShowWindow(self._overlay_hwnd, 4)  # SW_SHOWNOACTIVATE
-            user32.SetWindowPos(self._overlay_hwnd, -1, 0, 0, 0, 0, 0x0013)  # no move/size/activate
-        else:
-            self.overlay.deiconify()
-
-    def set_overlay_status(self, text):
-        mode = "processing" if "process" in text.lower() else "listening"
-        self.enqueue(self.orb.set_mode, mode)
-
-    def hide_recording(self):
-        self.enqueue(self._hide_recording_now)
-
-    def _hide_recording_now(self):
-        self.orb.stop()
-        self.overlay.withdraw()
-
-    def update_waveform_from_volume(self, volume):
-        # Audio callbacks can arrive much faster than the UI refresh rate. The
-        # orb stores only the newest level, preventing a queue backlog and lag.
-        self.orb.set_volume(volume)
-
-    def show_dashboard(self):
-        self.refresh()
-        self.root.deiconify()
-        self.root.lift()
-        self.root.focus_force()
-
-    def hide_dashboard(self):
-        self.root.withdraw()
-
-    def show_error(self, title, message):
-        self.enqueue(messagebox.showerror, title, message)
-
-    def run(self, background=False):
-        self.refresh()
-        if background:
-            self.root.withdraw()
-        self.root.mainloop()
+        name=self.current_page
+        if name=='Home' and hasattr(self.root,'metric_values'):
+            s=self.storage.stats(); self.root.metric_values['words'].setText(f"{s['words']:,}"); self.root.metric_values['dictations'].setText(f"{s['dictations']:,}"); self.root.metric_values['wpm'].setText(str(round(s['words']*60/s['seconds'])) if s['seconds'] else '—'); rows=self.storage.recent_history(1); text=self.callbacks.get('last_text',lambda:'')() or (rows[0]['final_text'] if rows else ''); self.root.latest.setPlainText(text or 'Your next thought starts here.')
+        elif name=='History' and hasattr(self.root,'history_table'):
+            rows=self.storage.recent_history(); t=self.root.history_table; t.setRowCount(len(rows))
+            for r,row in enumerate(rows):
+                stamp=datetime.fromisoformat(row['created_at']).astimezone().strftime('%d %b · %H:%M'); vals=(stamp,row['final_text'],str(len(row['final_text'].split())))
+                for c,value in enumerate(vals):
+                    item=QTableWidgetItem(value); item.setForeground(Qt.GlobalColor.black); t.setItem(r,c,item)
+        elif name.lower() in self.root.entry_controls:
+            table=name.lower(); tree=self.root.entry_controls[table][2]; rows=self.storage.list_entries(table); tree.setRowCount(len(rows))
+            for r,row in enumerate(rows):
+                vals=(row['spoken'],row['replacement']) if table=='dictionary' else (row['trigger'],row['expansion'])
+                tree.setItem(r,0,QTableWidgetItem(vals[0])); tree.setItem(r,1,QTableWidgetItem(vals[1])); delete=btn('Delete','secondary'); delete.clicked.connect(lambda checked=False,t=table,i=row['id']:self.root.delete_entry(t,i)); tree.setCellWidget(r,2,delete)
+    def destroy(self):
+        if not self.alive:return
+        self.alive=False; self.pump.stop(); self.overlay.hide_orb(); self.root.close(); self.app.quit()

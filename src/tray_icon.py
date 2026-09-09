@@ -36,6 +36,12 @@ class TrayIcon:
     def stop(self):
         self.icon.stop()
 
+    def notify(self, title, message):
+        try:
+            self.icon.notify(message, title)
+        except Exception:
+            pass
+
     def set_status(self, status):
         try:
             self.icon.title = f"ALTWISP — {status}"[:127]

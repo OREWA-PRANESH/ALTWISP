@@ -1,0 +1,94 @@
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen } = require('electron');
+const { spawn } = require('node:child_process');
+const path = require('node:path');
+const fs = require('node:fs');
+const readline = require('node:readline');
+
+let dashboard, overlay, tray, worker;
+let nextRequest = 1;
+const pending = new Map();
+
+function page(name) { return path.join(__dirname, '..', 'renderer', name); }
+function createWindows() {
+  dashboard = new BrowserWindow({
+    width: 1180, height: 800, minWidth: 980, minHeight: 680, show: false,
+    backgroundColor: '#f5f7fb', titleBarStyle: 'hidden', titleBarOverlay: { color: '#11182700', symbolColor: '#667085', height: 42 },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+  });
+  dashboard.loadFile(page('index.html'));
+  dashboard.on('close', e => { if (!app.isQuitting) { e.preventDefault(); dashboard.hide(); } });
+
+  overlay = new BrowserWindow({
+    width: 58, height: 58, frame: false, transparent: true, backgroundColor: '#00000000',
+    thickFrame: false, roundedCorners: false, resizable: false,
+    show: false, skipTaskbar: true, focusable: false, alwaysOnTop: true,
+    hasShadow: false, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
+  });
+  overlay.setAlwaysOnTop(true, 'screen-saver');
+  overlay.setBackgroundColor('#00000000');
+  overlay.setIgnoreMouseEvents(true);
+  overlay.setTitle('ALTWISP Recorder');
+  const area = screen.getPrimaryDisplay().workArea;
+  overlay.setPosition(Math.round(area.x + area.width / 2 - 29), area.y + area.height - 82, false);
+  if (!process.argv.includes('--background')) dashboard.once('ready-to-show', () => dashboard.show());
+  overlay.loadFile(page('overlay.html'));
+}
+
+function workerCommand(name, payload = {}) {
+  return new Promise((resolve, reject) => {
+    if (!worker?.stdin.writable) return reject(new Error('Native worker is unavailable'));
+    const id = nextRequest++;
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('Worker did not respond')); }, 6000);
+    pending.set(id, { resolve, reject, timer });
+    worker.stdin.write(JSON.stringify({ id, name, payload }) + '\n');
+  });
+}
+function broadcast(event) {
+  dashboard?.webContents.send('agent-event', event);
+  overlay?.webContents.send('agent-event', event);
+  if (event.type === 'state') {
+    if (event.value === 'starting' || event.value === 'listening') overlay.showInactive();
+    else overlay.hide();
+  }
+}
+function startWorker() {
+  const sourcePython = [
+    path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe'),
+    path.join(__dirname, '..', '..', 'ALTWISP', 'venv', 'Scripts', 'python.exe')
+  ].find(fs.existsSync);
+  const executable = app.isPackaged ? path.join(process.resourcesPath, 'native', 'altwisp-worker.exe') : sourcePython;
+  const args = app.isPackaged ? [] : [path.join(__dirname, '..', 'native', 'agent.py')];
+  worker = spawn(executable, args, { cwd: path.join(__dirname, '..'), windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  readline.createInterface({ input: worker.stdout }).on('line', line => {
+    try {
+      const msg = JSON.parse(line);
+      if (msg.replyTo && pending.has(msg.replyTo)) { const p = pending.get(msg.replyTo); clearTimeout(p.timer); pending.delete(msg.replyTo); msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.error)); }
+      else broadcast(msg);
+    } catch { /* diagnostics remain on stderr */ }
+  });
+  worker.stderr.on('data', data => console.error(String(data).trim()));
+  worker.on('exit', code => broadcast({ type: 'error', title: 'Background worker stopped', message: `Exit code ${code}` }));
+}
+function createTray() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><defs><linearGradient id="g"><stop stop-color="#6940ff"/><stop offset="1" stop-color="#00d7d0"/></linearGradient></defs><circle cx="16" cy="16" r="13" fill="#111c2b"/><circle cx="16" cy="16" r="9" fill="url(#g)"/></svg>`;
+  tray = new Tray(nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({width:20,height:20}));
+  tray.setToolTip('ALTWISP — Ready');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Open dashboard', click: () => { dashboard.show(); dashboard.focus(); } },
+    { label: 'Start / stop dictation', click: () => workerCommand('toggle').catch(() => {}) },
+    { type: 'separator' }, { label: 'Quit ALTWISP', click: () => { app.isQuitting = true; app.quit(); } }
+  ]));
+  tray.on('double-click', () => dashboard.show());
+}
+
+if (!app.requestSingleInstanceLock()) app.quit();
+else app.whenReady().then(() => { createWindows(); startWorker(); createTray(); });
+app.on('second-instance', () => { dashboard?.show(); dashboard?.focus(); });
+app.on('before-quit', () => { app.isQuitting = true; try { worker?.stdin.write(JSON.stringify({name:'quit'})+'\n'); } catch {} });
+app.on('window-all-closed', () => {});
+ipcMain.handle('agent-command', async (_, {name,payload}) => {
+  const data = await workerCommand(name,payload);
+  if (name === 'saveSettings') app.setLoginItemSettings({ openAtLogin: !!payload.launch_at_login, args: ['--background'] });
+  return data;
+});
+ipcMain.on('window-action', (_, action) => { if(action==='minimize') dashboard.minimize(); if(action==='close') dashboard.hide(); if(action==='quit'){app.isQuitting=true;app.quit();} });

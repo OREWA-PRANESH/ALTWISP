@@ -25,7 +25,13 @@ class ReactiveOrb:
         self.x, self.y = np.meshgrid(axis, axis)
         self.radius = np.sqrt(self.x * self.x + self.y * self.y)
         # A soft one-pixel antialiased boundary around the sphere.
-        self.alpha = np.clip((1.0 - self.radius) * size * 0.9, 0.0, 1.0)
+        self.alpha = (np.clip((1.0 - self.radius) * size * 0.9, 0.0, 1.0) * 255).astype(np.uint8)
+        rim = np.clip((self.radius - 0.79) / 0.21, 0.0, 1.0)
+        self.shade = np.clip(1.04 - 0.48 * rim + 0.08 * (-self.x - self.y), 0.48, 1.08)
+        self.edge_blue = np.exp(-((self.radius - 0.91) / 0.055) ** 2)
+        self.highlight = np.exp(-((self.x + 0.36) ** 2 * 7.0 + (self.y + 0.48) ** 2 * 10.0))
+        self.rgba = np.empty((size, size, 4), dtype=np.uint8)
+        self.rgba[..., 3] = self.alpha
         self.image_item = canvas.create_image(size // 2, size // 2, anchor="center")
         self._render_frame()
 
@@ -67,13 +73,13 @@ class ReactiveOrb:
         smoothing = 1.0 - math.exp(-dt * (20.0 if self.target_level > self.level else 7.5))
         self.level += (self.target_level - self.level) * smoothing
         speed = 1.2 if self.mode == "processing" else 0.42 + self.level * 3.4
-        self.phase = (self.phase + dt * speed) % (math.pi * 20)
+        self.phase += dt * speed
         self._render_frame()
-        self._after_id = self.canvas.after(self.frame_ms, self._animate)
+        elapsed_ms = (time.perf_counter() - now) * 1000
+        self._after_id = self.canvas.after(max(1, round(self.frame_ms - elapsed_ms)), self._animate)
 
     def _render_frame(self):
         x, y, phase, level = self.x, self.y, self.phase, self.level
-        energy = 0.08 + level * 0.92
 
         # Several slowly moving fields create the impression of one viscous
         # substance folding through another rather than a repeating waveform.
@@ -81,7 +87,7 @@ class ReactiveOrb:
         warp_x = x + displacement * np.sin(2.4 * y - phase * 1.55)
         warp_y = y + displacement * 1.15 * np.sin(2.0 * x + phase * 1.2)
         voice_push = level * 0.30 * math.sin(phase * 2.35)
-        fold = np.sin(2.7 * warp_x - 1.9 * warp_y + phase * (1.35 + level))
+        fold = np.sin(2.7 * warp_x - 1.9 * warp_y + phase * 1.35)
         fold += (0.48 + 0.30 * level) * np.sin(3.6 * warp_y + 1.3 * warp_x - phase * 1.1)
         fold = (np.tanh(fold * 1.15) + 1.0) * 0.5
 
@@ -106,21 +112,20 @@ class ReactiveOrb:
 
         # Spherical depth: dark lower rim, cobalt edge light, and restrained
         # glass highlight at the upper-left.
-        rim = np.clip((self.radius - 0.79) / 0.21, 0.0, 1.0)
-        shade = np.clip(1.04 - 0.48 * rim + 0.08 * (-x - y), 0.48, 1.08)
-        edge_blue = np.exp(-((self.radius - 0.91) / 0.055) ** 2)
-        highlight = np.exp(-((x + 0.36) ** 2 * 7.0 + (y + 0.48) ** 2 * 10.0))
+        shade, edge_blue, highlight = self.shade, self.edge_blue, self.highlight
 
         red = red * shade + 4 * edge_blue + 13 * highlight
         green = green * shade + 18 * edge_blue + 22 * highlight
         blue_channel = blue_channel * shade + 48 * edge_blue + 38 * highlight
 
-        rgba = np.empty((self.size, self.size, 4), dtype=np.uint8)
+        rgba = self.rgba
         rgba[..., 0] = np.clip(red, 0, 255).astype(np.uint8)
         rgba[..., 1] = np.clip(green, 0, 255).astype(np.uint8)
         rgba[..., 2] = np.clip(blue_channel, 0, 255).astype(np.uint8)
-        rgba[..., 3] = (self.alpha * 255).astype(np.uint8)
 
-        self.last_image = Image.fromarray(rgba, "RGBA")
-        self._photo = ImageTk.PhotoImage(self.last_image)
-        self.canvas.itemconfigure(self.image_item, image=self._photo)
+        self.last_image = Image.fromarray(rgba)
+        if self._photo is None:
+            self._photo = ImageTk.PhotoImage(self.last_image)
+            self.canvas.itemconfigure(self.image_item, image=self._photo)
+        else:
+            self._photo.paste(self.last_image)
