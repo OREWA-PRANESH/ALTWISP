@@ -5,4 +5,7 @@ $Python = Join-Path $Parent 'venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $Python)) {
     $Python = Join-Path $Parent 'ALTWISP\venv\Scripts\python.exe'
 }
+if (-not (Test-Path -LiteralPath $Python)) {
+    $Python = Join-Path $env:USERPROFILE 'anaconda3\python.exe'
+}
 & $Python -m PyInstaller --noconfirm --clean --onefile --console --name altwisp-worker --distpath (Join-Path $Root 'native\dist') --workpath (Join-Path $Root 'native\build') --specpath (Join-Path $Root 'native') (Join-Path $Root 'native\agent.py')
