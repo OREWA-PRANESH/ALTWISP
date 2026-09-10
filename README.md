@@ -22,8 +22,6 @@ npm ci
 npm run dist
 ```
 
-The original Python desktop client remains in `src` while the Electron rewrite is validated and packaged.
-
 ## Features
 
 - Same-key start/stop dictation on key release (`Ctrl+Windows`)
@@ -39,23 +37,6 @@ The original Python desktop client remains in `src` while the Electron rewrite i
 - Windows system-tray icon with dashboard, dictation, paste-last, and quit actions
 - Five-minute recording limit, reliable temp-file cleanup, and visible errors
 
-## Legacy Python client
-
-```powershell
-py -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python .\src\main.py
-```
-
-For free on-device transcription:
-
-```powershell
-pip install -r requirements-local.txt
-```
-
-Open Settings, select `local`, and choose a Whisper model. The model is downloaded on first use. `small` is the default balance between speed and accuracy on CPU.
-
 Groq mode requires a `.env` file containing `GROQ_API_KEY=...`. Do not commit or distribute that file.
 
 ## Background startup on Windows
@@ -64,30 +45,13 @@ Enable **Launch ALTWISP when I sign in to Windows** in Settings. This registers 
 
 ALTWISP intentionally runs as a per-user background desktop agent instead of a Windows Service. Windows Services execute in Session 0 and cannot safely interact with the signed-in user's microphone, clipboard, global input hooks, or dashboard. A service would therefore break the core dictation workflow. Launch-at-login provides service-like persistence in the correct interactive session.
 
-## Build an executable
-
-```powershell
-.\build.ps1
-```
-
-Copy `.env` beside the executable only if you use Groq mode. Local mode does not need an API key.
-
 ## Test
 
 ```powershell
-python -m unittest -v test_edge_cases.py
-python -m compileall -q src
+npm --prefix electron-app test
 ```
 
-Run all regression tests with `python -m unittest discover -v`.
 The automated tests do not use the microphone, clipboard, network, or paid APIs.
-
-### Responsiveness check
-
-`python src/main.py --self-test latency.json` exercises 20 simulated hotkey
-start/stop cycles against the real floating window, including slow microphone
-initialization. It reports event-to-window-call latency, not end-to-end speech
-recognition latency. The executable supports the same option.
 
 The orb disappears immediately when capture stops; transcription continues in
 the background. If you switch windows before completion, copy the result from
