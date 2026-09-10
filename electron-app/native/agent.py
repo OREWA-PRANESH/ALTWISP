@@ -114,7 +114,10 @@ class Agent:
 agent=Agent()
 # Let the Windows keyboard backend handle modifier timing and left/right key
 # variants. The callback fires after the chord is released.
-hotkey_handle = keyboard.add_hotkey('ctrl+windows', agent.toggle, suppress=False, trigger_on_release=True)
+hotkey_handles = [
+    keyboard.add_hotkey('ctrl+left windows', agent.toggle, suppress=False, trigger_on_release=True),
+    keyboard.add_hotkey('ctrl+right windows', agent.toggle, suppress=False, trigger_on_release=True),
+]
 agent.emit(type='state',value='idle',message='Ready when you are')
 for line in sys.stdin:
     try:
@@ -122,5 +125,6 @@ for line in sys.stdin:
         if name=='quit':break
         data=agent.command(name,msg.get('payload') or {}); agent.emit(replyTo=msg.get('id'),ok=True,data=data)
     except Exception as exc:agent.emit(replyTo=msg.get('id') if 'msg' in locals() else None,ok=False,error=describe_error(exc))
-keyboard.remove_hotkey(hotkey_handle)
+for _hotkey_handle in hotkey_handles:
+    keyboard.remove_hotkey(_hotkey_handle)
 agent.close()
