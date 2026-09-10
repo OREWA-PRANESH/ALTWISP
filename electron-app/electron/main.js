@@ -7,6 +7,7 @@ const readline = require('node:readline');
 let dashboard, overlay, tray, worker;
 let nextRequest = 1;
 const pending = new Map();
+const LOGIN_ARGS = ['--background'];
 
 function page(name) { return path.join(__dirname, '..', 'renderer', name); }
 function createWindows() {
@@ -58,7 +59,12 @@ function startWorker() {
   ].find(fs.existsSync);
   const executable = app.isPackaged ? path.join(process.resourcesPath, 'native', 'altwisp-worker.exe') : sourcePython;
   const args = app.isPackaged ? [] : [path.join(__dirname, '..', 'native', 'agent.py')];
-  worker = spawn(executable, args, { cwd: path.join(__dirname, '..'), windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  const workerCwd = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
+  worker = spawn(executable, args, { cwd: workerCwd, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  worker.on('error', error => {
+    console.error('Native worker failed to start:', error);
+    broadcast({ type: 'error', title: 'Background worker unavailable', message: error.message });
+  });
   readline.createInterface({ input: worker.stdout }).on('line', line => {
     try {
       const msg = JSON.parse(line);
@@ -70,15 +76,18 @@ function startWorker() {
   worker.on('exit', code => broadcast({ type: 'error', title: 'Background worker stopped', message: `Exit code ${code}` }));
 }
 function createTray() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><defs><linearGradient id="g"><stop stop-color="#6940ff"/><stop offset="1" stop-color="#00d7d0"/></linearGradient></defs><circle cx="16" cy="16" r="13" fill="#111c2b"/><circle cx="16" cy="16" r="9" fill="url(#g)"/></svg>`;
-  tray = new Tray(nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({width:20,height:20}));
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'tray.png')
+    : path.join(__dirname, '..', 'assets', 'tray.png');
+  tray = new Tray(nativeImage.createFromPath(iconPath).resize({width: 20, height: 20}));
   tray.setToolTip('ALTWISP — Ready');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open dashboard', click: () => { dashboard.show(); dashboard.focus(); } },
     { label: 'Start / stop dictation', click: () => workerCommand('toggle').catch(() => {}) },
     { type: 'separator' }, { label: 'Quit ALTWISP', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
-  tray.on('double-click', () => dashboard.show());
+  tray.on('click', () => { dashboard.show(); dashboard.focus(); });
+  tray.on('double-click', () => { dashboard.show(); dashboard.focus(); });
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -88,7 +97,9 @@ app.on('before-quit', () => { app.isQuitting = true; try { worker?.stdin.write(J
 app.on('window-all-closed', () => {});
 ipcMain.handle('agent-command', async (_, {name,payload}) => {
   const data = await workerCommand(name,payload);
-  if (name === 'saveSettings') app.setLoginItemSettings({ openAtLogin: !!payload.launch_at_login, args: ['--background'] });
+  if (name === 'saveSettings') {
+    app.setLoginItemSettings({ openAtLogin: !!payload.launch_at_login, args: LOGIN_ARGS });
+  }
   return data;
 });
 ipcMain.on('window-action', (_, action) => { if(action==='minimize') dashboard.minimize(); if(action==='close') dashboard.hide(); if(action==='quit'){app.isQuitting=true;app.quit();} });

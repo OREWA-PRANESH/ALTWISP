@@ -2,6 +2,7 @@
   "name": "altwisp-electron",
   "version": "2.0.0",
   "description": "Fast, private voice dictation for Windows",
+  "author": "ALTWISP",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
@@ -17,9 +18,22 @@
   "build": {
     "appId": "com.altwisp.desktop",
     "productName": "ALTWISP",
+    "icon": "assets/icon.ico",
+    "compression": "store",
     "files": ["electron/**/*", "renderer/**/*", "package.json"],
-    "extraResources": [{"from": "native/dist/altwisp-worker.exe", "to": "native/altwisp-worker.exe"}],
-    "win": {"target": "nsis", "artifactName": "ALTWISP-Setup-${version}.${ext}"},
-    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true}
+    "extraResources": [
+      {"from": "native/dist/altwisp-worker.exe", "to": "native/altwisp-worker.exe"},
+      {"from": "assets/tray.png", "to": "assets/tray.png"}
+    ],
+    "win": {"target": "nsis", "icon": "assets/icon.ico", "artifactName": "ALTWISP-Setup-${version}.${ext}"},
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ALTWISP",
+      "runAfterFinish": true
+    }
   }
 }

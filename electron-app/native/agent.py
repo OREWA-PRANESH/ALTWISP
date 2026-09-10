@@ -13,9 +13,17 @@ from storage import Storage
 from transcriber import Transcriber
 from typer import Typer
 
-load_dotenv(Path(__file__).resolve().parents[1]/'.env')
-load_dotenv(application_dir()/'.env')
-load_dotenv(app_data_dir()/'.env')
+_env_files = [
+    Path(__file__).resolve().parents[1] / '.env',
+    application_dir() / '.env',
+    app_data_dir() / '.env',
+]
+# In the unpacked Windows build, keep using the existing project credentials
+# when this Electron app lives beside the original ALTWISP project.
+if getattr(sys, 'frozen', False):
+    _env_files.append(Path(sys.executable).resolve().parents[5] / 'ALTWISP' / '.env')
+for _env_file in _env_files:
+    load_dotenv(_env_file)
 logging.basicConfig(stream=sys.stderr,level=logging.WARNING)
 
 class Chord:
@@ -31,7 +39,12 @@ class Chord:
             if {k[0] for k in self.pressed}=={'ctrl','windows'}:self.armed=True
         elif event.event_type==keyboard.KEY_UP:
             self.pressed.discard(identity)
-            if self.armed and not self.pressed:self.armed=False;self.callback()
+            # Ctrl and Win are released a few milliseconds apart on Windows.
+            # Trigger when the chord has been released, not only when the
+            # entire physical-key set happens to be empty at once.
+            if self.armed and not {k[0] for k in self.pressed}:
+                self.armed=False
+                self.callback()
 
 class Agent:
     def __init__(self):
