@@ -111,11 +111,16 @@ class Agent:
     def close(self):
         keyboard.unhook_all();self.audio.recording=False;self.audio.close();self.worker.shutdown(wait=False)
 
-agent=Agent(); chord=Chord(agent.toggle); keyboard.hook(chord.handle,suppress=False); agent.emit(type='state',value='idle',message='Ready when you are')
+agent=Agent()
+# Let the Windows keyboard backend handle modifier timing and left/right key
+# variants. The callback fires after the chord is released.
+hotkey_handle = keyboard.add_hotkey('ctrl+windows', agent.toggle, suppress=False, trigger_on_release=True)
+agent.emit(type='state',value='idle',message='Ready when you are')
 for line in sys.stdin:
     try:
         msg=json.loads(line); name=msg.get('name','');
         if name=='quit':break
         data=agent.command(name,msg.get('payload') or {}); agent.emit(replyTo=msg.get('id'),ok=True,data=data)
     except Exception as exc:agent.emit(replyTo=msg.get('id') if 'msg' in locals() else None,ok=False,error=describe_error(exc))
+keyboard.remove_hotkey(hotkey_handle)
 agent.close()
