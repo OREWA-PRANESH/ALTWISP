@@ -1,8 +1,11 @@
 gsap.registerPlugin(ScrollTrigger);
 const themeToggle=document.querySelector('[data-theme-toggle]');
+const signalToggle=document.querySelector('[data-signal-toggle]');
 if(new URLSearchParams(location.search).get('theme')==='orb')document.body.classList.add('orb-theme');
+if(new URLSearchParams(location.search).get('theme')==='signal')document.body.classList.add('signal-theme');
 function syncTheme(){const orb=document.body.classList.toggle('orb-theme');themeToggle.textContent=orb?'Noir base ◐':'Orb spectrum ◐';history.replaceState(null,'',orb?'?theme=orb':location.pathname)}
 themeToggle?.addEventListener('click',syncTheme);
+signalToggle?.addEventListener('click',()=>{document.body.classList.remove('orb-theme');document.body.classList.toggle('signal-theme');history.replaceState(null,'',document.body.classList.contains('signal-theme')?'?theme=signal':location.pathname);ScrollTrigger.refresh()});
 const glow=document.querySelector('.cursor-glow');
 window.addEventListener('pointermove',e=>{gsap.to(glow,{x:e.clientX,y:e.clientY,duration:.5,ease:'power3.out'})});
 gsap.utils.toArray('.reveal').forEach(el=>gsap.to(el,{opacity:1,y:0,duration:1.2,ease:'power4.out',scrollTrigger:{trigger:el,start:'top 82%',once:true}}));
@@ -15,4 +18,7 @@ gsap.to('.tunnel-ring',{scale:3.3,rotation:180,ease:'none',scrollTrigger:{trigge
 gsap.to('.tunnel-copy',{scale:1.5,opacity:.25,ease:'none',scrollTrigger:{trigger:'.tunnel',start:'top 65%',end:'bottom 30%',scrub:1}});
 gsap.to('.shard-left',{x:-180,rotation:8,ease:'power2.inOut',scrollTrigger:{trigger:'.download',start:'top 75%',end:'top 15%',scrub:1}});
 gsap.to('.shard-right',{x:230,rotation:-9,ease:'power2.inOut',scrollTrigger:{trigger:'.download',start:'top 75%',end:'top 15%',scrub:1}});
+gsap.utils.toArray('.section-grid,.feature-band,.tunnel,.download').forEach((section,i)=>gsap.to(section,{filter:'contrast(1.12) saturate(1.2)',scrollTrigger:{trigger:section,start:'top 70%',end:'top 35%',scrub:1}}));
+gsap.to('.signal-theme .orbit-a',{rotation:720,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'+=2400',scrub:.5}});
+gsap.to('.signal-theme .tunnel-ring',{scale:5,rotation:-360,ease:'none',scrollTrigger:{trigger:'.tunnel',start:'top bottom',end:'bottom top',scrub:.5}});
 document.querySelectorAll('[data-section]').forEach(section=>{ScrollTrigger.create({trigger:section,start:'top 55%',onEnter:()=>document.body.classList.add('flash'),onLeave:()=>document.body.classList.remove('flash'),onEnterBack:()=>document.body.classList.add('flash'),onLeaveBack:()=>document.body.classList.remove('flash')})});
