@@ -1,0 +1,14 @@
+gsap.registerPlugin(ScrollTrigger);
+const glow=document.querySelector('.cursor-glow');
+window.addEventListener('pointermove',e=>{gsap.to(glow,{x:e.clientX,y:e.clientY,duration:.5,ease:'power3.out'})});
+gsap.utils.toArray('.reveal').forEach(el=>gsap.to(el,{opacity:1,y:0,duration:1.2,ease:'power4.out',scrollTrigger:{trigger:el,start:'top 82%',once:true}}));
+gsap.to('.orbit-a',{rotation:360,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'+=1600',scrub:1}});
+gsap.to('.orbit-b',{rotation:-180,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'+=1600',scrub:1}});
+gsap.to('.hero-visual',{y:-130,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:1}});
+gsap.to('.big-outline',{x:-90,rotation:80,ease:'none',scrollTrigger:{trigger:'.statement',start:'top bottom',end:'bottom top',scrub:1}});
+gsap.utils.toArray('.feature-card').forEach((card,i)=>gsap.from(card,{y:120,rotation:i===1?-4:4,opacity:0,duration:1,scrollTrigger:{trigger:card,start:'top 85%',toggleActions:'play none none reverse'}}));
+gsap.to('.tunnel-ring',{scale:3.3,rotation:180,ease:'none',scrollTrigger:{trigger:'.tunnel',start:'top bottom',end:'bottom top',scrub:1.2}});
+gsap.to('.tunnel-copy',{scale:1.5,opacity:.25,ease:'none',scrollTrigger:{trigger:'.tunnel',start:'top 65%',end:'bottom 30%',scrub:1}});
+gsap.to('.shard-left',{x:-180,rotation:8,ease:'power2.inOut',scrollTrigger:{trigger:'.download',start:'top 75%',end:'top 15%',scrub:1}});
+gsap.to('.shard-right',{x:230,rotation:-9,ease:'power2.inOut',scrollTrigger:{trigger:'.download',start:'top 75%',end:'top 15%',scrub:1}});
+document.querySelectorAll('[data-section]').forEach(section=>{ScrollTrigger.create({trigger:section,start:'top 55%',onEnter:()=>document.body.classList.add('flash'),onLeave:()=>document.body.classList.remove('flash'),onEnterBack:()=>document.body.classList.add('flash'),onLeaveBack:()=>document.body.classList.remove('flash')})});
