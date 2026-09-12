@@ -1,4 +1,5 @@
 node_modules/
+.venv-worker/
 dist/
 release/
 native/build/
