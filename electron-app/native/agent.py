@@ -12,6 +12,7 @@ from llm_processor import TextProcessor
 from storage import Storage
 from transcriber import Transcriber
 from typer import Typer
+from hotkey import WindowsHotkeyConnection
 
 _env_files = [
     Path(__file__).resolve().parents[1] / '.env',
@@ -25,26 +26,6 @@ if getattr(sys, 'frozen', False):
 for _env_file in _env_files:
     load_dotenv(_env_file)
 logging.basicConfig(stream=sys.stderr,level=logging.WARNING)
-
-class Chord:
-    def __init__(self,callback): self.callback=callback; self.pressed=set(); self.armed=False
-    def handle(self,event):
-        name=(event.name or '').lower(); group='ctrl' if 'ctrl' in name or 'control' in name else ('windows' if 'windows' in name or name in {'win','left win','right win'} else None)
-        if not group:
-            if event.event_type==keyboard.KEY_DOWN:self.armed=False
-            return
-        identity=(group,getattr(event,'scan_code',event.name))
-        if event.event_type==keyboard.KEY_DOWN:
-            self.pressed.add(identity)
-            if {k[0] for k in self.pressed}=={'ctrl','windows'}:self.armed=True
-        elif event.event_type==keyboard.KEY_UP:
-            self.pressed.discard(identity)
-            # Ctrl and Win are released a few milliseconds apart on Windows.
-            # Trigger when the chord has been released, not only when the
-            # entire physical-key set happens to be empty at once.
-            if self.armed and not {k[0] for k in self.pressed}:
-                self.armed=False
-                self.callback()
 
 class Agent:
     def __init__(self):
@@ -109,22 +90,22 @@ class Agent:
         try:os.remove(path)
         except OSError:pass
     def close(self):
-        keyboard.unhook_all();self.audio.recording=False;self.audio.close();self.worker.shutdown(wait=False)
+        self.audio.recording=False;self.audio.close();self.worker.shutdown(wait=False)
 
 agent=Agent()
-# Let the Windows keyboard backend handle modifier timing and left/right key
-# variants. The callback fires after the chord is released.
-hotkey_handles = [
-    keyboard.add_hotkey('ctrl+left windows', agent.toggle, suppress=False, trigger_on_release=True),
-    keyboard.add_hotkey('ctrl+right windows', agent.toggle, suppress=False, trigger_on_release=True),
-]
-agent.emit(type='state',value='idle',message='Ready when you are')
+hotkey=WindowsHotkeyConnection(keyboard,agent.toggle)
+try:
+    hotkey.start()
+    agent.emit(type='hotkey',value='ready',message='Ctrl + Windows connected')
+    agent.emit(type='state',value='idle',message='Ready when you are')
+except Exception as exc:
+    agent.emit(type='hotkey',value='error',message=describe_error(exc))
+    agent.emit(type='state',value='idle',message='Hotkey unavailable; use the tray control')
 for line in sys.stdin:
     try:
         msg=json.loads(line); name=msg.get('name','');
         if name=='quit':break
         data=agent.command(name,msg.get('payload') or {}); agent.emit(replyTo=msg.get('id'),ok=True,data=data)
     except Exception as exc:agent.emit(replyTo=msg.get('id') if 'msg' in locals() else None,ok=False,error=describe_error(exc))
-for _hotkey_handle in hotkey_handles:
-    keyboard.remove_hotkey(_hotkey_handle)
+hotkey.close()
 agent.close()
