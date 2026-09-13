@@ -54,10 +54,13 @@ function broadcast(event) {
 }
 function startWorker() {
   const sourcePython = [
-    path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe'),
-    path.join(__dirname, '..', '..', 'ALTWISP', 'venv', 'Scripts', 'python.exe')
+    path.join(__dirname, '..', '.venv-worker', 'Scripts', 'python.exe')
   ].find(fs.existsSync);
   const executable = app.isPackaged ? path.join(process.resourcesPath, 'native', 'altwisp-worker.exe') : sourcePython;
+  if (!executable) {
+    broadcast({ type: 'error', title: 'Background worker unavailable', message: 'Run npm run build:worker once to prepare the native hotkey and microphone worker.' });
+    return;
+  }
   const args = app.isPackaged ? [] : [path.join(__dirname, '..', 'native', 'agent.py')];
   const workerCwd = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
   worker = spawn(executable, args, { cwd: workerCwd, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
