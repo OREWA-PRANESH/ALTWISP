@@ -5,11 +5,25 @@ const fs = require('node:fs');
 const readline = require('node:readline');
 
 let dashboard, overlay, tray, worker;
+let overlayReady = false;
+let latestAgentState = { value: 'idle', message: 'Ready when you are' };
 let nextRequest = 1;
 const pending = new Map();
 const LOGIN_ARGS = ['--background'];
 
 function page(name) { return path.join(__dirname, '..', 'renderer', name); }
+function positionOverlay() {
+  if (!overlay || overlay.isDestroyed()) return;
+  const point = screen.getCursorScreenPoint();
+  const area = screen.getDisplayNearestPoint(point).workArea;
+  overlay.setPosition(Math.round(area.x + area.width / 2 - 29), area.y + area.height - 82, false);
+}
+function syncOverlay() {
+  if (!overlayReady || !overlay || overlay.isDestroyed()) return;
+  positionOverlay();
+  if (latestAgentState.value === 'starting' || latestAgentState.value === 'listening') overlay.showInactive();
+  else overlay.hide();
+}
 function createWindows() {
   dashboard = new BrowserWindow({
     width: 1180, height: 800, minWidth: 980, minHeight: 680, show: false,
@@ -26,11 +40,13 @@ function createWindows() {
     hasShadow: false, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
   });
   overlay.setAlwaysOnTop(true, 'screen-saver');
+  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   overlay.setBackgroundColor('#00000000');
   overlay.setIgnoreMouseEvents(true);
   overlay.setTitle('ALTWISP Recorder');
-  const area = screen.getPrimaryDisplay().workArea;
-  overlay.setPosition(Math.round(area.x + area.width / 2 - 29), area.y + area.height - 82, false);
+  positionOverlay();
+  overlay.once('ready-to-show', () => { overlayReady = true; syncOverlay(); });
+  overlay.on('closed', () => { overlayReady = false; overlay = null; });
   if (!process.argv.includes('--background')) dashboard.once('ready-to-show', () => dashboard.show());
   overlay.loadFile(page('overlay.html'));
 }
@@ -45,12 +61,10 @@ function workerCommand(name, payload = {}) {
   });
 }
 function broadcast(event) {
+  if (event.type === 'state') latestAgentState = { value: event.value, message: event.message || '' };
   dashboard?.webContents.send('agent-event', event);
-  overlay?.webContents.send('agent-event', event);
-  if (event.type === 'state') {
-    if (event.value === 'starting' || event.value === 'listening') overlay.showInactive();
-    else overlay.hide();
-  }
+  if (overlayReady) overlay?.webContents.send('agent-event', event);
+  if (event.type === 'state') syncOverlay();
 }
 function startWorker() {
   const sourcePython = [
@@ -94,7 +108,14 @@ function createTray() {
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
-else app.whenReady().then(() => { createWindows(); startWorker(); createTray(); });
+else app.whenReady().then(() => {
+  createWindows();
+  screen.on('display-metrics-changed', positionOverlay);
+  screen.on('display-added', positionOverlay);
+  screen.on('display-removed', positionOverlay);
+  startWorker();
+  createTray();
+});
 app.on('second-instance', () => { dashboard?.show(); dashboard?.focus(); });
 app.on('before-quit', () => { app.isQuitting = true; try { worker?.stdin.write(JSON.stringify({name:'quit'})+'\n'); } catch {} });
 app.on('window-all-closed', () => {});
