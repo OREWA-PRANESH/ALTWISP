@@ -29,18 +29,27 @@ logging.basicConfig(stream=sys.stderr,level=logging.WARNING)
 
 class Agent:
     def __init__(self):
-        self.lock=threading.Lock(); self.settings_store=SettingsStore(); self.settings=self.settings_store.load(); self.storage=Storage(); self.audio=AudioManager(max_seconds=self.settings.max_recording_seconds); self.typer=Typer(); self.state='idle'; self.target=None; self.pending=None; self.worker=ThreadPoolExecutor(max_workers=1,thread_name_prefix='dictation'); self.configure(); self.audio.on_volume_change=self.volume; self.audio.on_max_duration=self.stop
+        self.lock=threading.RLock(); self.settings_store=SettingsStore(); self.settings=self.settings_store.load(); self.storage=Storage(); self.audio=AudioManager(max_seconds=self.settings.max_recording_seconds); self.typer=Typer(); self.state='idle'; self.target=None; self.pending=None; self.closed=False; self.worker=ThreadPoolExecutor(max_workers=1,thread_name_prefix='dictation'); self.configure(); self.audio.on_volume_change=self.volume; self.audio.on_max_duration=self.stop
     def emit(self,**message):
         with self.lock: sys.stdout.write(json.dumps(message,ensure_ascii=True)+'\n'); sys.stdout.flush()
     def configure(self):
         self.transcriber=Transcriber(self.settings.transcription_backend,self.settings.local_model,self.settings.language); self.processor=TextProcessor(self.storage,self.settings.polish_enabled and self.settings.transcription_backend=='groq',self.settings.style)
     def volume(self,value): self.emit(type='volume',value=min(1,max(0,(float(value)-45)/2200)))
     def set_state(self,value,message=''):
-        self.state=value; self.emit(type='state',value=value,message=message)
-    def toggle(self): self.stop() if self.state in {'starting','listening'} else (self.start() if self.state=='idle' else None)
+        with self.lock:
+            if self.closed:return
+            self.state=value
+        self.emit(type='state',value=value,message=message)
+    def toggle(self):
+        with self.lock:
+            state=self.state
+        if state in {'starting','listening'}: self.stop()
+        elif state=='idle': self.start()
     def start(self):
-        if self.state!='idle':return
-        self.target=self.typer.foreground_window(); self.set_state('starting','Opening microphone…'); self.worker.submit(self._start)
+        with self.lock:
+            if self.closed or self.state!='idle':return False
+            self.target=self.typer.foreground_window(); self.state='starting'
+        self.emit(type='state',value='starting',message='Opening microphone…'); self.worker.submit(self._start); return True
     def _start(self):
         try:
             self.audio.start_recording()
@@ -48,8 +57,10 @@ class Agent:
             else:self.audio.recording=False
         except Exception as exc:self.audio.recording=False;self.set_state('idle','Microphone unavailable');self.emit(type='error',title='Microphone unavailable',message=describe_error(exc))
     def stop(self):
-        if self.state not in {'starting','listening'}:return
-        self.audio.recording=False;self.set_state('processing','Transcribing…');self.worker.submit(self._finish)
+        with self.lock:
+            if self.closed or self.state not in {'starting','listening'}:return False
+            self.audio.recording=False; self.state='processing'
+        self.emit(type='state',value='processing',message='Transcribing…'); self.worker.submit(self._finish); return True
     def _finish(self):
         path=None
         try:
@@ -90,6 +101,9 @@ class Agent:
         try:os.remove(path)
         except OSError:pass
     def close(self):
+        with self.lock:
+            if self.closed:return
+            self.closed=True; self.state='closed'
         self.audio.recording=False;self.audio.close();self.worker.shutdown(wait=False)
 
 agent=Agent()
