@@ -7,6 +7,8 @@ const readline = require('node:readline');
 let dashboard, overlay, tray, worker;
 let overlayReady = false;
 let latestAgentState = { value: 'idle', message: 'Ready when you are' };
+let workerRestartAttempts = 0;
+let workerRestartTimer;
 let nextRequest = 1;
 const pending = new Map();
 const LOGIN_ARGS = ['--background'];
@@ -78,6 +80,7 @@ function startWorker() {
   const args = app.isPackaged ? [] : [path.join(__dirname, '..', 'native', 'agent.py')];
   const workerCwd = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
   worker = spawn(executable, args, { cwd: workerCwd, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  const currentWorker = worker;
   worker.on('error', error => {
     console.error('Native worker failed to start:', error);
     broadcast({ type: 'error', title: 'Background worker unavailable', message: error.message });
@@ -85,12 +88,25 @@ function startWorker() {
   readline.createInterface({ input: worker.stdout }).on('line', line => {
     try {
       const msg = JSON.parse(line);
+      if (msg.type === 'hotkey' && msg.value === 'ready') workerRestartAttempts = 0;
       if (msg.replyTo && pending.has(msg.replyTo)) { const p = pending.get(msg.replyTo); clearTimeout(p.timer); pending.delete(msg.replyTo); msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.error)); }
       else broadcast(msg);
     } catch { /* diagnostics remain on stderr */ }
   });
   worker.stderr.on('data', data => console.error(String(data).trim()));
-  worker.on('exit', code => broadcast({ type: 'error', title: 'Background worker stopped', message: `Exit code ${code}` }));
+  worker.on('exit', code => {
+    if (worker !== currentWorker) return;
+    worker = null;
+    for (const [id, request] of pending) { clearTimeout(request.timer); request.reject(new Error('Background worker stopped')); pending.delete(id); }
+    if (app.isQuitting) return;
+    if (workerRestartAttempts < 5) {
+      workerRestartAttempts += 1;
+      workerRestartTimer = setTimeout(() => { workerRestartTimer = undefined; startWorker(); }, Math.min(1000 * workerRestartAttempts, 5000));
+      broadcast({ type: 'error', title: 'Background worker restarted', message: `Worker stopped (exit ${code}); retrying automatically.` });
+    } else {
+      broadcast({ type: 'error', title: 'Background worker stopped', message: `Exit code ${code}. Restart ALTWISP to try again.` });
+    }
+  });
 }
 function createTray() {
   const iconPath = app.isPackaged
@@ -117,7 +133,7 @@ else app.whenReady().then(() => {
   createTray();
 });
 app.on('second-instance', () => { dashboard?.show(); dashboard?.focus(); });
-app.on('before-quit', () => { app.isQuitting = true; try { worker?.stdin.write(JSON.stringify({name:'quit'})+'\n'); } catch {} });
+app.on('before-quit', () => { app.isQuitting = true; if (workerRestartTimer) clearTimeout(workerRestartTimer); try { worker?.stdin.write(JSON.stringify({name:'quit'})+'\n'); } catch {} });
 app.on('window-all-closed', () => {});
 ipcMain.handle('agent-command', async (_, {name,payload}) => {
   const data = await workerCommand(name,payload);
