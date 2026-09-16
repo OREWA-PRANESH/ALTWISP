@@ -10,7 +10,7 @@ class Typer:
 
     @staticmethod
     def inject_text(text, target_window=None):
-        if not text:
+        if not text or target_window is None:
             return False
         if target_window and foreground_window() != target_window:
             return False
