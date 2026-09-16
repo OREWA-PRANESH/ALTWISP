@@ -27,6 +27,8 @@ class Transcriber:
     def transcribe(self, audio_file_path):
         if not audio_file_path or not os.path.exists(audio_file_path):
             return ""
+        if os.path.getsize(audio_file_path) <= 44:
+            return ""
         if self.backend == "local":
             segments, _ = self._local_model_instance().transcribe(
                 audio_file_path,
@@ -34,6 +36,8 @@ class Transcriber:
                 vad_filter=True,
             )
             return " ".join(segment.text.strip() for segment in segments).strip()
+        if self.backend != "groq":
+            raise ValueError(f"Unsupported transcription backend: {self.backend}")
         with open(audio_file_path, "rb") as audio:
             result = self._groq_client().audio.transcriptions.create(
                 file=(os.path.basename(audio_file_path), audio.read()),
@@ -41,4 +45,6 @@ class Transcriber:
                 response_format="text",
                 language=None if self.language == "auto" else self.language,
             )
-        return result.strip()
+        if isinstance(result, bytes):
+            result = result.decode("utf-8", errors="replace")
+        return str(result or "").strip()
