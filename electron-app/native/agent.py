@@ -48,7 +48,10 @@ class Agent:
     def start(self):
         with self.lock:
             if self.closed or self.state!='idle':return False
-            self.target=self.typer.foreground_window(); self.state='starting'
+            try:self.target=self.typer.foreground_window()
+            except Exception as exc:
+                self.emit(type='error',title='Could not identify target window',message=describe_error(exc)); return False
+            self.state='starting'
         self.emit(type='state',value='starting',message='Opening microphone…'); self.worker.submit(self._start); return True
     def _start(self):
         try:
@@ -94,7 +97,13 @@ class Agent:
         return {'state':self.state}
     def _retry(self,path,duration):
         try:
-            raw=self.transcriber.transcribe(path); text=self.processor.process_text(raw) or raw
+            raw=self.transcriber.transcribe(path)
+            if not raw:
+                self.set_state('idle','No speech recognized')
+                try:os.remove(path)
+                except OSError:pass
+                return
+            text=self.processor.process_text(raw) or raw
             if self.settings.save_history:self.storage.add_history(raw,text,duration)
             self.emit(type='result',text=text,pasted=False);self.set_state('idle','Text ready in dashboard')
         except Exception as exc:self.pending=(path,duration);self.set_state('idle','Retry failed');self.emit(type='error',title='Retry failed',message=describe_error(exc),retry=True);return
