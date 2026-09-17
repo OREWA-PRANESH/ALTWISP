@@ -14,15 +14,16 @@ from transcriber import Transcriber
 from typer import Typer
 from hotkey import WindowsHotkeyConnection
 
-_env_files = [
-    Path(__file__).resolve().parents[1] / '.env',
-    application_dir() / '.env',
-    app_data_dir() / '.env',
-]
-# In the unpacked Windows build, keep using the existing project credentials
-# when this Electron app lives beside the original ALTWISP project.
+_env_files = [app_data_dir() / '.env']
 if getattr(sys, 'frozen', False):
-    _env_files.append(Path(sys.executable).resolve().parents[5] / 'ALTWISP' / '.env')
+    _env_files.append(application_dir() / '.env')
+else:
+    _env_files.extend([
+        Path(__file__).resolve().parents[1] / '.env',
+        Path(__file__).resolve().parents[2] / '.env',
+    ])
+# AppData is the canonical user location; development project files remain
+# supported for local testing without ever being bundled into a release.
 for _env_file in _env_files:
     load_dotenv(_env_file)
 logging.basicConfig(stream=sys.stderr,level=logging.WARNING)
