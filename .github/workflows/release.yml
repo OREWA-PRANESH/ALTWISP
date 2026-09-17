@@ -1,0 +1,38 @@
+name: Build Windows release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: electron-app/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install JavaScript dependencies
+        working-directory: electron-app
+        run: npm ci
+      - name: Run tests
+        working-directory: electron-app
+        run: npm test
+      - name: Build installer
+        working-directory: electron-app
+        run: npm run dist
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME (Get-ChildItem electron-app/dist/ALTWISP-Setup-*.exe).FullName --generate-notes --title $env:GITHUB_REF_NAME
