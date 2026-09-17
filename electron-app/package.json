@@ -32,7 +32,6 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "useZip": true,
       "shortcutName": "ALTWISP",
       "runAfterFinish": true
     }
