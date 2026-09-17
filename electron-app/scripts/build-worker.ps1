@@ -5,7 +5,7 @@ $Python = Join-Path $Venv 'Scripts\python.exe'
 $Requirements = Join-Path $Root 'requirements-worker.txt'
 
 if (-not (Test-Path -LiteralPath $Python)) {
-    py -3.13 -m venv $Venv
+    python -m venv $Venv
 }
 
 & $Python -m pip install --disable-pip-version-check -r $Requirements
