@@ -37,7 +37,7 @@ npm run dist
 - Windows system-tray icon with dashboard, dictation, paste-last, and quit actions
 - Five-minute recording limit, reliable temp-file cleanup, and visible errors
 
-Groq mode requires a `.env` file containing `GROQ_API_KEY=...`. Do not commit or distribute that file.
+Groq mode requires a user-local `.env` file containing `GROQ_API_KEY=...`. Copy `electron-app/.env.example` to `%LOCALAPPDATA%\ALTWISP\.env`, add your key, and restart ALTWISP. Never commit or distribute that file.
 
 ## Background startup on Windows
 
