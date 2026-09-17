@@ -9,6 +9,8 @@ let overlayReady = false;
 let latestAgentState = { value: 'idle', message: 'Ready when you are' };
 let workerRestartAttempts = 0;
 let workerRestartTimer;
+const ORB_SIZE_PIXELS = 58;
+const ORB_TASKBAR_MARGIN = 12;
 let nextRequest = 1;
 const pending = new Map();
 const LOGIN_ARGS = ['--background'];
@@ -16,9 +18,19 @@ const LOGIN_ARGS = ['--background'];
 function page(name) { return path.join(__dirname, '..', 'renderer', name); }
 function positionOverlay() {
   if (!overlay || overlay.isDestroyed()) return;
-  const point = screen.getCursorScreenPoint();
-  const area = screen.getDisplayNearestPoint(point).workArea;
-  overlay.setPosition(Math.round(area.x + area.width / 2 - 29), area.y + area.height - 82, false);
+  const area = screen.getPrimaryDisplay().workArea;
+  const bounds = overlay.getBounds();
+  overlay.setPosition(
+    Math.round(area.x + (area.width - bounds.width) / 2),
+    Math.round(area.y + area.height - bounds.height - ORB_TASKBAR_MARGIN),
+    false,
+  );
+}
+function sizeOverlay() {
+  if (!overlay || overlay.isDestroyed()) return;
+  const scale = screen.getPrimaryDisplay().scaleFactor || 1;
+  const size = Math.max(24, Math.round(ORB_SIZE_PIXELS / scale));
+  overlay.setSize(size, size, false);
 }
 function syncOverlay() {
   if (!overlayReady || !overlay || overlay.isDestroyed()) return;
@@ -46,6 +58,7 @@ function createWindows() {
   overlay.setBackgroundColor('#00000000');
   overlay.setIgnoreMouseEvents(true);
   overlay.setTitle('ALTWISP Recorder');
+  sizeOverlay();
   positionOverlay();
   overlay.once('ready-to-show', () => { overlayReady = true; syncOverlay(); });
   overlay.on('closed', () => { overlayReady = false; overlay = null; });
@@ -126,9 +139,9 @@ function createTray() {
 if (!app.requestSingleInstanceLock()) app.quit();
 else app.whenReady().then(() => {
   createWindows();
-  screen.on('display-metrics-changed', positionOverlay);
-  screen.on('display-added', positionOverlay);
-  screen.on('display-removed', positionOverlay);
+  screen.on('display-metrics-changed', () => { sizeOverlay(); positionOverlay(); });
+  screen.on('display-added', () => { sizeOverlay(); positionOverlay(); });
+  screen.on('display-removed', () => { sizeOverlay(); positionOverlay(); });
   startWorker();
   createTray();
 });
