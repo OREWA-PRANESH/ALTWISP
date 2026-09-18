@@ -3,14 +3,13 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const readline = require('node:readline');
+const { positionOverlay: applyOverlayBounds } = require('./overlay-geometry');
 
 let dashboard, overlay, tray, worker;
 let overlayReady = false;
 let latestAgentState = { value: 'idle', message: 'Ready when you are' };
 let workerRestartAttempts = 0;
 let workerRestartTimer;
-const ORB_SIZE_PIXELS = 58;
-const ORB_TASKBAR_MARGIN = 12;
 let nextRequest = 1;
 const pending = new Map();
 const LOGIN_ARGS = ['--background'];
@@ -18,19 +17,7 @@ const LOGIN_ARGS = ['--background'];
 function page(name) { return path.join(__dirname, '..', 'renderer', name); }
 function positionOverlay() {
   if (!overlay || overlay.isDestroyed()) return;
-  const area = screen.getPrimaryDisplay().workArea;
-  const bounds = overlay.getBounds();
-  overlay.setPosition(
-    Math.round(area.x + (area.width - bounds.width) / 2),
-    Math.round(area.y + area.height - bounds.height - ORB_TASKBAR_MARGIN),
-    false,
-  );
-}
-function sizeOverlay() {
-  if (!overlay || overlay.isDestroyed()) return;
-  const scale = screen.getPrimaryDisplay().scaleFactor || 1;
-  const size = Math.max(24, Math.round(ORB_SIZE_PIXELS / scale));
-  overlay.setSize(size, size, false);
+  applyOverlayBounds(overlay, screen.getPrimaryDisplay());
 }
 function syncOverlay() {
   if (!overlayReady || !overlay || overlay.isDestroyed()) return;
@@ -41,7 +28,7 @@ function syncOverlay() {
 function createWindows() {
   dashboard = new BrowserWindow({
     width: 1180, height: 800, minWidth: 980, minHeight: 680, show: false,
-    backgroundColor: '#f5f7fb', titleBarStyle: 'hidden', titleBarOverlay: { color: '#11182700', symbolColor: '#667085', height: 42 },
+    backgroundColor: '#f5f7fb', titleBarStyle: 'hidden',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
   dashboard.loadFile(page('index.html'));
@@ -58,7 +45,6 @@ function createWindows() {
   overlay.setBackgroundColor('#00000000');
   overlay.setIgnoreMouseEvents(true);
   overlay.setTitle('ALTWISP Recorder');
-  sizeOverlay();
   positionOverlay();
   overlay.once('ready-to-show', () => { overlayReady = true; syncOverlay(); });
   overlay.on('closed', () => { overlayReady = false; overlay = null; });
@@ -139,9 +125,9 @@ function createTray() {
 if (!app.requestSingleInstanceLock()) app.quit();
 else app.whenReady().then(() => {
   createWindows();
-  screen.on('display-metrics-changed', () => { sizeOverlay(); positionOverlay(); });
-  screen.on('display-added', () => { sizeOverlay(); positionOverlay(); });
-  screen.on('display-removed', () => { sizeOverlay(); positionOverlay(); });
+  screen.on('display-metrics-changed', positionOverlay);
+  screen.on('display-added', positionOverlay);
+  screen.on('display-removed', positionOverlay);
   startWorker();
   createTray();
 });
@@ -155,4 +141,4 @@ ipcMain.handle('agent-command', async (_, {name,payload}) => {
   }
   return data;
 });
-ipcMain.on('window-action', (_, action) => { if(action==='minimize') dashboard.minimize(); if(action==='close') dashboard.hide(); if(action==='quit'){app.isQuitting=true;app.quit();} });
+ipcMain.on('window-action', (_, action) => { if(action==='minimize') dashboard.minimize(); if(action==='maximize') dashboard.isMaximized() ? dashboard.unmaximize() : dashboard.maximize(); if(action==='close') dashboard.hide(); if(action==='quit'){app.isQuitting=true;app.quit();} });
