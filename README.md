@@ -2,6 +2,21 @@
 
 ALTWISP is a privacy-friendly Windows voice-to-text desktop agent. Select a text box, press and release `Ctrl+Windows`, speak, then press and release `Ctrl+Windows` again. The floating recorder never takes focus, and the formatted result is pasted into the text box you originally selected.
 
+## Project layout
+
+- `electron-app/electron/`: desktop windows, tray, and worker bridge.
+- `electron-app/renderer/`: dashboard and recorder UI.
+- `electron-app/native/`: hotkey, audio, transcription, and storage worker.
+- `electron-app/assets/`: application icons.
+- `electron-app/scripts/`: worker build and Windows packaging helpers.
+- `electron-app/tests/`: automated and desktop runtime checks.
+- `site/`: public website.
+- `.github/workflows/`: CI and release publishing.
+
+Generated folders (`dist/`, `native/build/`, `native/dist/`, `node_modules/`,
+and `.venv-worker/`) stay out of Git. Keep complete packaged application folders
+together; their executable depends on the accompanying resources.
+
 ## Electron desktop app (primary)
 
 The modern rewrite lives in `electron-app`. It combines an Electron dashboard and transparent voice-reactive orb with a lightweight native Python worker for Windows hotkeys, recording, transcription, and pasting.
