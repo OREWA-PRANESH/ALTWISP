@@ -21,7 +21,7 @@
     "test:overlay": "electron tests/overlay-runtime.cjs"
   },
   "devDependencies": {
-    "electron": "^38.0.0",
+    "electron": "^44.3.0",
     "electron-builder": "^26.0.12"
   },
   "build": {
