@@ -1,7 +1,13 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -13,6 +19,9 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: electron-app/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - name: Test Electron app
         working-directory: electron-app
         run: npm ci && npm test

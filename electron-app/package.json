@@ -3,6 +3,14 @@
   "version": "2.0.2",
   "description": "Fast, private voice dictation for Windows",
   "author": "ALTWISP",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OREWA-PRANESH/ALTWISP.git",
+    "directory": "electron-app"
+  },
+  "bugs": "https://github.com/OREWA-PRANESH/ALTWISP/issues",
+  "homepage": "https://github.com/OREWA-PRANESH/ALTWISP#readme",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
@@ -28,6 +36,10 @@
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "../LICENSE",
+        "to": "licenses/ALTWISP.txt"
+      },
       {
         "from": "native/dist/altwisp-worker.exe",
         "to": "native/altwisp-worker.exe"
