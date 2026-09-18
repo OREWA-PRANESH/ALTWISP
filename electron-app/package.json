@@ -20,7 +20,8 @@
     "appId": "com.altwisp.desktop",
     "productName": "ALTWISP",
     "icon": "assets/icon.ico",
-    "compression": "store",
+    "compression": "normal",
+    "afterPack": "electron-builder.after-pack.js",
     "files": ["electron/**/*", "renderer/**/*", "package.json"],
     "extraResources": [
       {"from": "native/dist/altwisp-worker.exe", "to": "native/altwisp-worker.exe"},
