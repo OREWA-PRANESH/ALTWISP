@@ -9,7 +9,8 @@
     "dev": "electron . --dev",
     "build:worker": "powershell -ExecutionPolicy Bypass -File scripts/build-worker.ps1",
     "dist": "npm run build:worker && electron-builder --win nsis",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "test:overlay": "electron tests/overlay-runtime.cjs"
   },
   "devDependencies": {
     "electron": "^38.0.0",
