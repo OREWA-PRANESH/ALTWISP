@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+  <title id="title">ALTWISP — Voice, uninterrupted.</title>
+  <desc id="desc">ALTWISP's original violet and cyan orb beside its wordmark on a dark navy background. Windows voice dictation with cloud or local processing.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101426"/><stop offset="1" stop-color="#080d18"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#6655d8" stop-opacity=".24"/><stop offset="1" stop-color="#6655d8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="sphere" cx="28%" cy="20%" r="90%"><stop stop-color="#9255ff"/><stop offset=".44" stop-color="#4739ed"/><stop offset="1" stop-color="#102c8a"/></radialGradient>
+    <linearGradient id="ribbon" x2="1" y2="1"><stop stop-color="#63edff"/><stop offset=".55" stop-color="#13c8ed"/><stop offset="1" stop-color="#00aebc"/></linearGradient>
+    <clipPath id="clip"><circle cx="128" cy="128" r="108"/></clipPath>
+    <clipPath id="panel"><rect width="1280" height="360" rx="24"/></clipPath>
+  </defs>
+  <g clip-path="url(#panel)">
+  <rect width="1280" height="360" rx="24" fill="url(#bg)"/>
+  <ellipse cx="240" cy="180" rx="350" ry="280" fill="url(#glow)"/>
+  <path d="M1010 0V360M1100 0V360M1190 0V360M970 90H1280M970 180H1280M970 270H1280" stroke="#7889b7" stroke-opacity=".07"/>
+  <g transform="translate(76 56) scale(.97)">
+    <circle cx="128" cy="128" r="108" fill="url(#sphere)"/>
+    <g clip-path="url(#clip)">
+      <path d="M0 153C59 84 102 181 169 118S258 102 279 115L276 164C204 130 181 232 104 182S31 182 0 199Z" fill="url(#ribbon)"/>
+      <path d="M-2 222C62 168 116 235 172 195S248 170 276 184L278 259H-2Z" fill="#04dfce"/>
+      <ellipse cx="80" cy="58" rx="23" ry="7" transform="rotate(-29 80 58)" fill="#fff" opacity=".35"/>
+    </g>
+    <circle cx="128" cy="128" r="107.5" fill="none" stroke="#b9d4ff" stroke-opacity=".35"/>
+  </g>
+  <text x="366" y="164" fill="#f5f6ff" font-family="Segoe UI,Arial,sans-serif" font-weight="700" font-size="82" letter-spacing="8">ALTWISP</text>
+  <text x="371" y="218" fill="#bcc6df" font-family="Segoe UI,Arial,sans-serif" font-size="27" letter-spacing="1">Voice, uninterrupted.</text>
+  <text x="372" y="267" fill="#7889ad" font-family="Segoe UI,Arial,sans-serif" font-size="15" letter-spacing="2.6">WINDOWS DICTATION  /  CLOUD OR LOCAL</text>
+  <path d="M1072 160V199M1088 147V212M1104 132V227M1120 155V204M1136 166V193" stroke="#5cdbde" stroke-width="5" stroke-linecap="round" opacity=".6"/>
+  </g>
+</svg>

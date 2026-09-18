@@ -1,4 +1,25 @@
-# ALTWISP
+<p align="center">
+  <img src="docs/assets/altwisp-banner.svg" alt="ALTWISP — Voice, uninterrupted. Windows voice dictation with cloud or local processing." width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest"><img src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-536DFE?style=flat-square" alt="Windows 10 and 11, x64"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-16B8AC?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/Desktop-Electron-7483B5?style=flat-square" alt="Electron desktop">
+  <img src="https://img.shields.io/badge/Worker-Python-7483B5?style=flat-square" alt="Python native worker">
+  <a href="https://github.com/OREWA-PRANESH/ALTWISP/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-Automated%20checks-536DFE?style=flat-square" alt="Automated CI checks; open workflow for results"></a>
+</p>
+
+<p align="center">Speak naturally. Put your words where you work.<br>Windows voice dictation with Groq cloud transcription or local Whisper.</p>
+
+<p align="center">
+  <a href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest"><strong>Download for Windows</strong></a> ·
+  <a href="#step-by-step-windows-installation">Installation guide</a> ·
+  <a href="#how-to-use">How to use</a> ·
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
+
+## ALTWISP
 
 Windows voice dictation that inserts your words into the application you are already using.
 
@@ -9,6 +30,20 @@ Windows voice dictation that inserts your words into the application you are alr
 Authorized collaborators can [download the verified v2.0.2 installer directly](https://github.com/OREWA-PRANESH/ALTWISP/releases/download/v2.0.2/ALTWISP-Setup-2.0.2.exe). Use the latest-release link above to find future versions.
 
 ALTWISP runs in the notification area. Press and release **Ctrl + Windows** to start recording, speak, and repeat to stop. A floating orb shows microphone activity without taking focus. Choose Groq cloud transcription or local Whisper processing.
+
+## Contents
+
+- [Advantages and uses](#advantages-and-uses)
+- [Requirements](#requirements)
+- [Windows installation](#step-by-step-windows-installation)
+- [How to use](#how-to-use)
+- [Privacy and storage](#privacy-and-storage)
+- [Limitations](#limitations)
+- [Troubleshooting](#troubleshooting)
+- [Update and uninstall](#update-and-uninstall)
+- [Build from source](#build-from-source)
+- [Repository layout](#repository-layout)
+- [Community and license](#community-and-license)
 
 ## Advantages and uses
 

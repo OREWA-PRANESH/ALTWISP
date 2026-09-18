@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">ALTWISP orb logo</title>
+  <desc id="desc">An indigo and violet sphere with two flowing cyan ribbons.</desc>
+  <defs>
+    <radialGradient id="sphere" cx="28%" cy="20%" r="90%"><stop stop-color="#9255ff"/><stop offset=".44" stop-color="#4739ed"/><stop offset="1" stop-color="#102c8a"/></radialGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#63edff"/><stop offset=".55" stop-color="#13c8ed"/><stop offset="1" stop-color="#00aebc"/></linearGradient>
+    <clipPath id="clip"><circle cx="128" cy="128" r="108"/></clipPath>
+  </defs>
+  <circle cx="128" cy="128" r="108" fill="url(#sphere)"/>
+  <g clip-path="url(#clip)">
+    <path d="M0 153C59 84 102 181 169 118S258 102 279 115L276 164C204 130 181 232 104 182S31 182 0 199Z" fill="url(#ribbon)"/>
+    <path d="M-2 222C62 168 116 235 172 195S248 170 276 184L278 259H-2Z" fill="#04dfce"/>
+    <ellipse cx="80" cy="58" rx="23" ry="7" transform="rotate(-29 80 58)" fill="#fff" opacity=".35"/>
+  </g>
+  <circle cx="128" cy="128" r="107.5" fill="none" stroke="#b9d4ff" stroke-opacity=".35"/>
+</svg>
