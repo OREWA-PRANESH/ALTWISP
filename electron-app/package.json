@@ -1,6 +1,6 @@
 {
   "name": "altwisp-electron",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Fast, private voice dictation for Windows",
   "author": "ALTWISP",
   "main": "electron/main.js",
@@ -22,12 +22,26 @@
     "icon": "assets/icon.ico",
     "compression": "normal",
     "afterPack": "electron-builder.after-pack.js",
-    "files": ["electron/**/*", "renderer/**/*", "package.json"],
-    "extraResources": [
-      {"from": "native/dist/altwisp-worker.exe", "to": "native/altwisp-worker.exe"},
-      {"from": "assets/tray.png", "to": "assets/tray.png"}
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "package.json"
     ],
-    "win": {"target": "nsis", "icon": "assets/icon.ico", "artifactName": "ALTWISP-Setup-${version}.${ext}"},
+    "extraResources": [
+      {
+        "from": "native/dist/altwisp-worker.exe",
+        "to": "native/altwisp-worker.exe"
+      },
+      {
+        "from": "assets/tray.png",
+        "to": "assets/tray.png"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "artifactName": "ALTWISP-Setup-${version}.${ext}"
+    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
