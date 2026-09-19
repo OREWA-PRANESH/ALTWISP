@@ -1,0 +1,3 @@
+body>*,body .site-nav,body footer{transition:opacity .42s ease,background-color 1.2s ease,color 1.2s ease,border-color 1.2s ease}
+body.theme-changing>*,body.theme-changing .site-nav,body.theme-changing footer{opacity:.28}
+@media(prefers-reduced-motion:reduce){body>*,body .site-nav,body footer{transition:none!important}body.theme-changing>*,body.theme-changing .site-nav,body.theme-changing footer{opacity:1}}
