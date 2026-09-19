@@ -1,6 +1,9 @@
 <p align="center">
-  <img src="docs/assets/altwisp-banner.svg" alt="ALTWISP — Voice, uninterrupted. Windows voice dictation with cloud or local processing." width="100%">
+  <img src="docs/assets/altwisp-orb.png" alt="ALTWISP orb logo" width="180">
 </p>
+
+<h1 align="center">ALTWISP</h1>
+<p align="center"><strong>Voice, uninterrupted.</strong><br>Windows voice dictation with cloud or local processing.</p>
 
 <p align="center">
   <a href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest"><img src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-536DFE?style=flat-square" alt="Windows 10 and 11, x64"></a>
