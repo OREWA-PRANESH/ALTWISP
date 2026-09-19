@@ -14,6 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest"><strong>Download for Windows</strong></a> ·
+  <a href="https://altwisp.vercel.app"><strong>Visit the website</strong></a> ·
   <a href="#step-by-step-windows-installation">Installation guide</a> ·
   <a href="#how-to-use">How to use</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
@@ -212,7 +213,7 @@ electron-app/
 site/                    Static product website
 ```
 
-Keeping the app and website together is intentional. `site/` is not bundled into the desktop app and can be deployed independently. Committing the site does not host it. Its CDN fonts and animations need network access. See [Website development](site/README.md).
+Keeping the app and website together is intentional. `site/` is not bundled into the desktop app and is deployed independently at [altwisp.vercel.app](https://altwisp.vercel.app). Its CDN fonts and animations need network access. See [Website development](site/README.md).
 
 Generated output, dependencies, recordings, databases, models, and keys stay out of Git.
 
