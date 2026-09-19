@@ -10,3 +10,8 @@ body.orb-theme .pulse-dot{background:var(--cyan);box-shadow:0 0 18px var(--cyan)
 /* Generated orb asset: one bounded surface keeps the logo perfectly stable across theme changes. */
 .orb-core{background:url('assets-altwisp-orb.png') center/contain no-repeat;filter:drop-shadow(0 0 34px #6b5cff55)}.orb-wave{display:none}
 footer .creator-credit{font-size:15px;letter-spacing:.06em}footer .creator-credit a{color:var(--ink)}footer .creator-credit strong{font-weight:700}
+/* Keep the original noir orb; the generated artwork is reserved for the orb theme. */
+.orb-core{width:210px;height:210px;background:radial-gradient(circle at 33% 26%,#f8fff0,#c2e33e 13%,#28300c 42%,#0d110b 70%);box-shadow:0 0 65px #d6ff4329,inset -25px -20px 50px #000;filter:none}
+.orb-wave{display:block;position:absolute;left:10%;right:10%;height:22px;border-radius:50%;border:1px solid #e9ff82aa;transform:rotate(-25deg)}
+.orb-wave:nth-child(1){top:35%}.orb-wave:nth-child(2){top:47%;transform:rotate(18deg)}.orb-wave:nth-child(3){top:58%;transform:rotate(-9deg)}
+body.orb-theme .orb-core{width:230px;height:230px;background:url('assets-altwisp-orb.png') center/contain no-repeat;box-shadow:none;filter:drop-shadow(0 0 34px #6b5cff55)}body.orb-theme .orb-wave{display:none}
