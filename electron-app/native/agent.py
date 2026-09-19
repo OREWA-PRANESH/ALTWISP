@@ -16,7 +16,15 @@ from hotkey import WindowsHotkeyConnection
 
 _env_files = [app_data_dir() / '.env']
 if getattr(sys, 'frozen', False):
-    _env_files.append(application_dir() / '.env')
+    # In an installed build the worker lives under resources/native, while
+    # users commonly put .env beside the app or under resources. Support all
+    # of those locations (without ever bundling a user's key).
+    _worker_dir = application_dir()
+    _env_files.extend([
+        _worker_dir / '.env',
+        _worker_dir.parent / '.env',
+        _worker_dir.parent.parent / '.env',
+    ])
 else:
     _env_files.extend([
         Path(__file__).resolve().parents[1] / '.env',
