@@ -35,8 +35,13 @@ Authorized collaborators can [download the verified v2.0.2 installer directly](h
 
 ALTWISP runs in the notification area. Press and release **Ctrl + Windows** to start recording, speak, and repeat to stop. A floating orb shows microphone activity without taking focus. Choose Groq cloud transcription or local Whisper processing.
 
+## Product demo
+
+[Watch the 20-second ALTWISP demo (silent MP4)](brag-output/ALTWISP-launch-video.mp4)
+
 ## Contents
 
+- [Product demo](#product-demo)
 - [Advantages and uses](#advantages-and-uses)
 - [Requirements](#requirements)
 - [Windows installation](#step-by-step-windows-installation)

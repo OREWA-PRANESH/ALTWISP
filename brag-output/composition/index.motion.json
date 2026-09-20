@@ -1,0 +1,12 @@
+{
+  "duration": 20,
+  "assertions": [
+    { "kind": "appearsBy", "selector": "#hook-speak", "bySec": 1.4 },
+    { "kind": "appearsBy", "selector": ".s2 .window", "bySec": 4.8 },
+    { "kind": "appearsBy", "selector": ".typed-line", "bySec": 12.6 },
+    { "kind": "appearsBy", "selector": ".wordmark", "bySec": 17.2 },
+    { "kind": "before", "a": "#hook-speak", "b": ".s1-sub" },
+    { "kind": "staysInFrame", "selector": ".s2 .window" },
+    { "kind": "staysInFrame", "selector": ".wordmark" }
+  ]
+}
