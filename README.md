@@ -13,6 +13,10 @@
   <a href="https://github.com/OREWA-PRANESH/ALTWISP/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-Automated%20checks-536DFE?style=flat-square" alt="Automated CI checks; open workflow for results"></a>
 </p>
 
+<p align="center">
+  <a href="brag-output/ALTWISP-launch-video.mp4"><strong>Watch the ALTWISP video</strong></a>
+</p>
+
 <p align="center">Speak naturally. Put your words where you work.<br>Windows voice dictation with Groq cloud transcription or local Whisper.</p>
 
 <p align="center">
@@ -35,13 +39,8 @@ Authorized collaborators can [download the verified v2.0.2 installer directly](h
 
 ALTWISP runs in the notification area. Press and release **Ctrl + Windows** to start recording, speak, and repeat to stop. A floating orb shows microphone activity without taking focus. Choose Groq cloud transcription or local Whisper processing.
 
-## Product demo
-
-[Watch the 20-second ALTWISP demo (silent MP4)](brag-output/ALTWISP-launch-video.mp4)
-
 ## Contents
 
-- [Product demo](#product-demo)
 - [Advantages and uses](#advantages-and-uses)
 - [Requirements](#requirements)
 - [Windows installation](#step-by-step-windows-installation)
