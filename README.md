@@ -17,7 +17,7 @@
   <img src="brag-output/ALTWISP-video.gif" alt="ALTWISP in action" width="960">
 </p>
 
-<p align="center">Speak naturally. Put your words where you work.<br>Windows voice dictation with Groq cloud transcription or local Whisper.</p>
+<p align="center"><strong>A free Wispr Flow alternative for Windows.</strong><br>Speak naturally. Put your words where you work with Groq cloud transcription or local Whisper.</p>
 
 <p align="center">
   <a href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest"><strong>Download for Windows</strong></a> ·
@@ -27,9 +27,11 @@
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
-## ALTWISP
+## A free Wispr Flow alternative for Windows
 
-Windows voice dictation that inserts your words into the application you are already using.
+ALTWISP is a free Wispr Flow alternative for Windows that inserts your spoken words into the application you are already using. It supports Groq cloud transcription and local Whisper processing, giving you a choice between cloud convenience and on-device recognition.
+
+ALTWISP is an independent project and is not affiliated with or endorsed by Wispr Flow.
 
 [Download the latest Windows release](https://github.com/OREWA-PRANESH/ALTWISP/releases/latest) · [Report a bug](https://github.com/OREWA-PRANESH/ALTWISP/issues/new/choose) · [Contribute](CONTRIBUTING.md)
 
