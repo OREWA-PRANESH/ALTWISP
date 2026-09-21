@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="brag-output/ALTWISP-launch-video.mp4"><strong>Watch the ALTWISP video</strong></a>
+  <img src="brag-output/ALTWISP-video.gif" alt="ALTWISP in action" width="960">
 </p>
 
 <p align="center">Speak naturally. Put your words where you work.<br>Windows voice dictation with Groq cloud transcription or local Whisper.</p>
