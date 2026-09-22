@@ -64,8 +64,8 @@ function workerCommand(name, payload = {}) {
 function broadcast(event) {
   if (event.type === 'state') latestAgentState = { value: event.value, message: event.message || '' };
   dashboard?.webContents.send('agent-event', event);
-  if (overlayReady) overlay?.webContents.send('agent-event', event);
   if (event.type === 'state') syncOverlay();
+  if (overlayReady) overlay?.webContents.send('agent-event', event);
 }
 function startWorker() {
   const sourcePython = [
