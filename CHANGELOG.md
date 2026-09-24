@@ -2,9 +2,16 @@
 
 ## Unreleased
 
-- Organized packaging helpers under `electron-app/scripts/`.
-- Expanded installation, privacy, limitations, and contributor documentation.
-- Added MIT license, community policies, issue/PR templates, and automatic CI.
+- No changes yet.
+
+## 2.0.3
+
+- Added a live microphone meter, one-second microphone test, and retry/delete controls for failed recordings.
+- Fixed recorder orb activation after sign-in startup and replayed recording state when its window loads.
+- Added a release check and link to install newer versions manually.
+- Upgraded Electron to 44.4.5 and added dependency audits and optional installer signing checks to CI.
+- Organized packaging helpers, expanded installation and privacy guidance, and added contributor documentation.
+- Added the MIT license, community policies, issue/PR templates, and automatic CI.
 
 ## 2.0.2
 
