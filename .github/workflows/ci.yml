@@ -25,3 +25,6 @@ jobs:
       - name: Test Electron app
         working-directory: electron-app
         run: npm ci && npm test
+      - name: Audit JavaScript dependencies
+        working-directory: electron-app
+        run: npm audit --audit-level=high

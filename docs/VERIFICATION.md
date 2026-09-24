@@ -1,6 +1,6 @@
 # Verification and remaining release work
 
-Repository review: 2026-09-18.
+Repository review: 2026-09-24.
 
 ## Verified
 
@@ -15,11 +15,9 @@ Repository review: 2026-09-18.
 
 ## Remaining work before a broad public release
 
-- `npm audit` currently reports two high-severity dependency groups: Electron
-  and `extract-zip`. The installed Electron line is 38; remediation suggested by
-  npm requires a major upgrade. Upgrade in a dedicated change and repeat actual
-  recorder, tray, title-control, packaging, and Windows tests. Do not use a forced
-  dependency upgrade without that verification.
+- Electron has been upgraded to 44.4.5 and `npm audit --audit-level=high` reports
+  no vulnerabilities in the current lockfile. The 100-cycle overlay test passes
+  on the upgraded runtime. Repeat installed-app smoke tests before release.
 - Run a clean Windows install/update/uninstall, microphone/cloud/local-model,
   sign-in startup, and mixed-monitor smoke-test matrix. These are not proven by
   unit tests or the window geometry test.
