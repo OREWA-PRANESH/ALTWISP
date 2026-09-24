@@ -4,7 +4,7 @@
 
 - No changes yet.
 
-## 2.0.3
+## 2.0.4
 
 - Added a live microphone meter, one-second microphone test, and retry/delete controls for failed recordings.
 - Fixed recorder orb activation after sign-in startup and replayed recording state when its window loads.
@@ -12,6 +12,9 @@
 - Upgraded Electron to 44.4.5 and added dependency audits and optional installer signing checks to CI.
 - Organized packaging helpers, expanded installation and privacy guidance, and added contributor documentation.
 - Added the MIT license, community policies, issue/PR templates, and automatic CI.
+- Disabled Electron Builder's automatic tag publishing so the release workflow can attach the installer and checksum itself.
+
+The `v2.0.3` tag did not publish an installer; its changes are included in 2.0.4.
 
 ## 2.0.2
 
