@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -46,7 +46,18 @@ function createWindows() {
   overlay.setIgnoreMouseEvents(true);
   overlay.setTitle('ALTWISP Recorder');
   positionOverlay();
-  overlay.once('ready-to-show', () => { overlayReady = true; syncOverlay(); });
+  // A hidden transparent window may never emit ready-to-show during sign-in startup.
+  // The page load is the readiness signal; replay the latest worker state so an
+  // activation that happened during startup also starts the orb animation.
+  overlay.webContents.on('did-start-loading', () => { overlayReady = false; });
+  overlay.webContents.on('did-finish-load', () => {
+    overlayReady = true;
+    syncOverlay();
+    overlay.webContents.send('agent-event', { type: 'state', ...latestAgentState });
+  });
+  overlay.webContents.on('did-fail-load', (_, code, description, url, isMainFrame) => {
+    if (isMainFrame) console.error(`Recorder overlay failed to load (${code}): ${description} ${url}`);
+  });
   overlay.on('closed', () => { overlayReady = false; overlay = null; });
   if (!process.argv.includes('--background')) dashboard.once('ready-to-show', () => dashboard.show());
   overlay.loadFile(page('overlay.html'));
@@ -135,6 +146,21 @@ app.on('second-instance', () => { dashboard?.show(); dashboard?.focus(); });
 app.on('before-quit', () => { app.isQuitting = true; if (workerRestartTimer) clearTimeout(workerRestartTimer); try { worker?.stdin.write(JSON.stringify({name:'quit'})+'\n'); } catch {} });
 app.on('window-all-closed', () => {});
 ipcMain.handle('agent-command', async (_, {name,payload}) => {
+  if (name === 'openReleases') return shell.openExternal('https://github.com/OREWA-PRANESH/ALTWISP/releases/latest');
+  if (name === 'checkForUpdates') {
+    const response = await fetch('https://api.github.com/repos/OREWA-PRANESH/ALTWISP/releases/latest', {
+      headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'ALTWISP' },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) throw new Error(response.status === 404 ? 'Release information is private. Open the release page with an authorized GitHub account.' : `GitHub returned HTTP ${response.status}`);
+    const release = await response.json();
+    const latest = String(release.tag_name || '').replace(/^v/, '');
+    if (!/^\d+\.\d+\.\d+$/.test(latest)) throw new Error('The latest release has no valid version tag');
+    const current = app.getVersion();
+    const toParts = version => version.split('.').map(Number);
+    const a = toParts(latest), b = toParts(current);
+    return { latest, current, available: a.some((part, index) => part > b[index] && a.slice(0, index).every((earlier, i) => earlier === b[i])) };
+  }
   const data = await workerCommand(name,payload);
   if (name === 'saveSettings') {
     app.setLoginItemSettings({ openAtLogin: !!payload.launch_at_login, args: LOGIN_ARGS });
