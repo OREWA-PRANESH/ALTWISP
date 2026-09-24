@@ -38,7 +38,7 @@ logging.basicConfig(stream=sys.stderr,level=logging.WARNING)
 
 class Agent:
     def __init__(self):
-        self.lock=threading.RLock(); self.settings_store=SettingsStore(); self.settings=self.settings_store.load(); self.storage=Storage(); self.audio=AudioManager(max_seconds=self.settings.max_recording_seconds); self.typer=Typer(); self.state='idle'; self.target=None; self.pending=None; self.closed=False; self.worker=ThreadPoolExecutor(max_workers=1,thread_name_prefix='dictation'); self.configure(); self.audio.on_volume_change=self.volume; self.audio.on_max_duration=self.stop
+        self.lock=threading.RLock(); self.settings_store=SettingsStore(); self.settings=self.settings_store.load(); self.storage=Storage(); self.audio=AudioManager(max_seconds=self.settings.max_recording_seconds,input_device=self.settings.input_device); self.typer=Typer(); self.state='idle'; self.target=None; self.pending=None; self.closed=False; self.worker=ThreadPoolExecutor(max_workers=1,thread_name_prefix='dictation'); self.configure(); self.audio.on_volume_change=self.volume; self.audio.on_max_duration=self.stop
     def emit(self,**message):
         with self.lock: sys.stdout.write(json.dumps(message,ensure_ascii=True)+'\n'); sys.stdout.flush()
     def configure(self):
@@ -81,7 +81,14 @@ class Agent:
         path=None
         try:
             path,duration=self.audio.stop_recording()
-            if not path:self.set_state('idle','No audio captured');return
+            if not path:
+                self.set_state('idle','No microphone audio captured')
+                self.emit(type='error',title='Microphone is silent',message='No input samples were captured. Choose and test the microphone in Settings.')
+                return
+            if self.audio.peak_rms < 45:
+                self.set_state('idle','Input is nearly silent')
+                self.emit(type='error',title='Microphone input is too quiet',message='Choose and test the microphone in Settings, then check its input volume and mute state.')
+                return
             raw=self.transcriber.transcribe(path)
             if not raw:self.set_state('idle','No speech recognized');return
             text=self.processor.process_text(raw) or raw
@@ -100,7 +107,12 @@ class Agent:
         if name=='toggle':self.toggle();return {'state':self.state}
         if name=='snapshot':return self.snapshot()
         if name=='saveSettings':
-            allowed={k:v for k,v in payload.items() if hasattr(self.settings,k)}; self.settings=replace(self.settings,**allowed); self.settings_store.save(self.settings); self.configure(); return self.snapshot()
+            allowed={k:v for k,v in payload.items() if hasattr(self.settings,k)}; self.settings=replace(self.settings,**allowed); self.settings_store.save(self.settings); self.audio.input_device=self.settings.input_device; self.configure(); return self.snapshot()
+        if name=='listMicrophones':
+            import sounddevice as sd
+            hostapis=sd.query_hostapis()
+            default_id=sd.default.device[0]
+            return {'default':default_id,'devices':[{'id':i,'name':device['name'],'hostapi':hostapis[device['hostapi']]['name']} for i,device in enumerate(sd.query_devices()) if device['max_input_channels']>0]}
         if name=='upsertDictionary':self.storage.upsert_dictionary(payload['spoken'],payload['replacement']);return self.snapshot()
         if name=='upsertSnippet':self.storage.upsert_snippet(payload['trigger'],payload['expansion']);return self.snapshot()
         if name=='deleteEntry':self.storage.delete_entry(payload['table'],int(payload['id']));return self.snapshot()
@@ -116,8 +128,10 @@ class Agent:
             if self.state!='idle':raise RuntimeError('Stop dictation before testing the microphone')
             import numpy as np
             import sounddevice as sd
-            device=sd.query_devices(kind='input')
-            sample=sd.rec(16000,samplerate=16000,channels=1,dtype='int16')
+            selected=payload.get('input_device',self.audio.input_device)
+            if selected is not None and (type(selected) is not int or selected<0):raise ValueError('Choose a valid microphone')
+            device=sd.query_devices(selected,kind='input')
+            sample=sd.rec(32000,samplerate=16000,channels=1,dtype='int16',device=selected)
             sd.wait()
             rms=float(np.sqrt(np.mean(sample.astype(np.float32)**2)))
             return {'device':device['name'],'level':min(1,max(0,(rms-45)/2200)),'rms':round(rms)}

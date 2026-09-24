@@ -37,9 +37,11 @@ ALTWISP is an independent project and is not affiliated with or endorsed by Wisp
 
 **Access:** this repository is currently private. Source, issues, and releases are available only to authorized collaborators. Public distribution is planned; the download link is not yet accessible to signed-out visitors.
 
-Authorized collaborators can [download the v2.0.4 installer directly](https://github.com/OREWA-PRANESH/ALTWISP/releases/download/v2.0.4/ALTWISP-Setup-2.0.4.exe). Use the latest-release link above to find future versions.
+Authorized collaborators can [download the latest Windows installer](https://github.com/OREWA-PRANESH/ALTWISP/releases/latest). Select the Setup EXE under Assets.
 
 ALTWISP runs in the notification area. Press and release **Ctrl + Windows** to start recording, speak, and repeat to stop. A floating orb shows microphone activity without taking focus. Choose Groq cloud transcription or local Whisper processing.
+
+If the orb appears but does not respond to speech, open Settings → Microphone input. The active device is shown there; test another microphone while speaking, then select **Use this microphone** once it detects sound.
 
 ## Contents
 

@@ -162,7 +162,7 @@ ipcMain.handle('agent-command', async (_, {name,payload}) => {
     return { latest, current, available: a.some((part, index) => part > b[index] && a.slice(0, index).every((earlier, i) => earlier === b[i])) };
   }
   const data = await workerCommand(name,payload);
-  if (name === 'saveSettings') {
+  if (name === 'saveSettings' && Object.hasOwn(payload, 'launch_at_login')) {
     app.setLoginItemSettings({ openAtLogin: !!payload.launch_at_login, args: LOGIN_ARGS });
   }
   return data;

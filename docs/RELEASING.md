@@ -28,7 +28,7 @@ Record pass/fail and app, Windows, display scale, microphone, and local model ve
 | Install and update | Clean install, Start-menu launch, install over the previous version, then uninstall; confirm user data is preserved during update. |
 | Cloud dictation | Enter a key in `%LOCALAPPDATA%\ALTWISP\.env`, restart, speak into Notepad, stop, and confirm the transcript is pasted. |
 | Local dictation | Select `tiny` or `base`, allow the first download, then repeat offline with the cached model. |
-| Microphone and recovery | Check the live meter and one-second test; deny microphone permission; force a transcription error and try both Retry and Delete. |
+| Microphone and recovery | Check the live meter, active input label, two-second test, and changing inputs; deny microphone permission; force a transcription error and try both Retry and Delete. |
 | Window behavior | Repeat hotkey start/stop, tray quit, sign-in startup, and overlay placement on primary and mixed-DPI displays. |
 | Updates | Check for a newer release and open the release page from Settings. Private repositories require an authorized browser session. |
 

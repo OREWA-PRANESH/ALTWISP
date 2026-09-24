@@ -23,6 +23,7 @@ def application_dir() -> Path:
 
 @dataclass
 class Settings:
+    input_device: int | None = None
     hotkey: str = "ctrl+windows"
     paste_last_hotkey: str = "shift+alt+z"
     transcription_backend: str = "groq"

@@ -4,6 +4,13 @@
 
 - No changes yet.
 
+## 2.0.5
+
+- Show the active Windows microphone and let users test another input before selecting it for dictation.
+- Report silent or nearly silent capture instead of submitting it for transcription.
+- Keep the sign-in startup preference unchanged when saving only the microphone selection.
+- Add audio-capture regression tests.
+
 ## 2.0.4
 
 - Added a live microphone meter, one-second microphone test, and retry/delete controls for failed recordings.

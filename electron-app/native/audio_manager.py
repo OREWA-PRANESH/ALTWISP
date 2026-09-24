@@ -9,9 +9,10 @@ import sounddevice as sd
 
 
 class AudioManager:
-    def __init__(self, sample_rate=16000, max_seconds=300):
+    def __init__(self, sample_rate=16000, max_seconds=300, input_device=None):
         self.sample_rate = sample_rate
         self.max_seconds = max_seconds
+        self.input_device = input_device
         self.recording = False
         self.audio_data = []
         self.stream = None
@@ -19,6 +20,7 @@ class AudioManager:
         self.on_max_duration = None
         self.started_at = None
         self._max_duration_notified = False
+        self.peak_rms = 0.0
         self._lock = threading.Lock()
 
     def start_recording(self):
@@ -27,8 +29,9 @@ class AudioManager:
                 return True
             self.audio_data = []
             self._max_duration_notified = False
+            self.peak_rms = 0.0
             try:
-                self.stream = sd.InputStream(samplerate=self.sample_rate, channels=1, dtype="int16", blocksize=320, callback=self._audio_callback)
+                self.stream = sd.InputStream(device=self.input_device, samplerate=self.sample_rate, channels=1, dtype="int16", blocksize=320, callback=self._audio_callback)
                 self.recording = True
                 self.started_at = time.monotonic()
                 stream = self.stream
@@ -54,18 +57,18 @@ class AudioManager:
         del frames, callback_time
         if status:
             print(f"Audio status: {status}")
+        rms = float(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
         with self._lock:
             if not self.recording:
                 return
             self.audio_data.append(indata.copy())
+            self.peak_rms = max(self.peak_rms, rms)
             callback = self.on_volume_change
             reached_max = bool(self.started_at and time.monotonic() - self.started_at >= self.max_seconds and not self._max_duration_notified)
             if reached_max:
                 self._max_duration_notified = True
                 self.recording = False
-            started_at = self.started_at
         if callback:
-            rms = float(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
             callback(rms)
         if reached_max and self.on_max_duration:
             self.on_max_duration()
@@ -94,6 +97,8 @@ class AudioManager:
         if not chunks:
             return None, duration
         audio = np.concatenate(chunks, axis=0)
+        if not np.any(audio):
+            return None, duration
         file_descriptor, path = tempfile.mkstemp(prefix="altwisp_", suffix=".wav")
         os.close(file_descriptor)
         try:
