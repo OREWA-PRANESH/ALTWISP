@@ -126,6 +126,8 @@ If a maintainer provides an application ZIP, extract the **entire** archive befo
 4. Keep the original target window and text field active while transcription completes.
 5. ALTWISP attempts to paste using **Ctrl + V**. If pasting fails or you changed windows, open **Home** and copy the latest transcript.
 
+Home shows live microphone activity while recording. In **Settings → Microphone test**, speak for one second to check that Windows is supplying audio without creating a dictation. If transcription fails after recording, Home offers **Retry transcription** or **Delete recording**.
+
 This is a toggle shortcut, not push-to-talk. Recording stops at the default five-minute limit. A new dictation cannot start while processing is in progress.
 
 Closing the dashboard leaves the app running in the tray. The tray menu opens the dashboard, starts/stops dictation, and quits the app. **Launch at sign in** starts it in the background in your interactive Windows session; it is not a Windows Service.
@@ -143,7 +145,7 @@ Closing the dashboard leaves the app running in the tray. The tray menu opens th
 | Clipboard | Used temporarily for pasting; the previous text clipboard is restored when possible. |
 | Audio | Temporary files normally removed after processing; failed recordings may remain pending in the worker. |
 
-History is enabled by default. Disable **Save history** for future dictations and use **History → Clear history** to remove stored transcripts. ALTWISP does not encrypt its local files. The current dashboard does not expose automatic retention or failed-recording retry/discard controls. See [Privacy details](docs/PRIVACY.md).
+History is enabled by default. Disable **Save history** for future dictations and use **History → Clear history** to remove stored transcripts. ALTWISP does not encrypt its local files. Failed recordings can be retried or deleted from Home while the worker remains running; abnormal termination may leave temporary files. Automatic retention is not exposed in the dashboard. See [Privacy details](docs/PRIVACY.md).
 
 ## Limitations
 
@@ -154,7 +156,7 @@ History is enabled by default. Disable **Save history** for future dictations an
 - The language dropdown currently exposes Auto and English; not every model-supported language has been verified.
 - The recorder anchors to the primary display. Not every mixed-DPI or multi-monitor configuration has been tested.
 - Electron/Chromium and native transcription libraries make the installation larger than a small native utility. Local models add further storage.
-- There is no automatic updater. Install newer releases manually.
+- Settings can check for newer releases, but installation remains manual.
 - The current Electron app implements one global dictation shortcut. Paste-last and dashboard global shortcuts are not implemented.
 - Python dependency ranges are bounded but not fully locked, so native rebuilds are not fully reproducible.
 - This is actively maintained software, not a guarantee of zero bugs or universal compatibility.
@@ -164,7 +166,7 @@ History is enabled by default. Disable **Save history** for future dictations an
 | Problem | What to check |
 | --- | --- |
 | Hotkey does nothing | Check the tray, quit duplicate app copies, restart, and try tray dictation. Other software may intercept shortcuts. |
-| Microphone unavailable | Check desktop microphone permission, the default recording device, and other apps using it. |
+| Microphone unavailable or silent | Use Settings → Microphone test, then check desktop microphone permission, the default recording device, and other apps using it. |
 | API key error | Check `.env` location/name and key, then fully quit and restart. |
 | First local dictation is slow | Wait for download/initialization; try a smaller model. |
 | Text is not inserted | Keep the original target active; copy from Home if the target blocks paste. |
@@ -176,7 +178,7 @@ Report reproducible problems using the [issue templates](https://github.com/OREW
 
 ## Update and uninstall
 
-To update, quit the app, download the newest Setup EXE, and install it. Back up `%LOCALAPPDATA%\ALTWISP` first if your data is important. The user-data directory is separate from the installed app.
+Settings can check for newer GitHub releases and open the releases page. While the repository is private, the check may require a release page opened in an authorized browser session. To update, quit the app, download the newest Setup EXE, and install it. Back up `%LOCALAPPDATA%\ALTWISP` first if your data is important. The user-data directory is separate from the installed app.
 
 To uninstall, quit and use Windows **Settings → Apps**. User data and model caches may remain. Delete your user-data folder only after backing it up if you want to erase keys, settings, dictionary, snippets, and history. Model libraries manage caches separately.
 

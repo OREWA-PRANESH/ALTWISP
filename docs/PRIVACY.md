@@ -14,8 +14,8 @@ Clear history for existing records. Dictionary and snippets are separate data.
 Deleting database rows is not a secure-erasure guarantee for storage or backups.
 
 Recordings use temporary files. Successful processing normally removes them.
-Failed recordings may remain pending in the worker; abnormal termination may
-leave files. The dashboard currently has no retry/discard controls. Do not assume
+Failed recordings may remain pending in the worker; Home offers Retry and Delete
+while that worker is running. Abnormal termination may leave files. Do not assume
 recordings never touch disk or are securely erased.
 
 Pasting uses the clipboard and attempts to restore its prior text. Clipboard

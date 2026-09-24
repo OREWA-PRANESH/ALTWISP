@@ -60,6 +60,10 @@ class Agent:
             try:self.target=self.typer.foreground_window()
             except Exception as exc:
                 self.emit(type='error',title='Could not identify target window',message=describe_error(exc)); return False
+            if self.pending:
+                try:os.remove(self.pending[0])
+                except OSError:pass
+                self.pending=None
             self.state='starting'
         self.emit(type='state',value='starting',message='Opening microphone…'); self.worker.submit(self._start); return True
     def _start(self):
@@ -91,7 +95,7 @@ class Agent:
                 try:os.remove(path)
                 except OSError:pass
     def snapshot(self):
-        return {'settings':asdict(self.settings),'stats':self.storage.stats(),'history':self.storage.recent_history(80),'dictionary':self.storage.list_entries('dictionary'),'snippets':self.storage.list_entries('snippets')}
+        return {'settings':asdict(self.settings),'stats':self.storage.stats(),'history':self.storage.recent_history(80),'dictionary':self.storage.list_entries('dictionary'),'snippets':self.storage.list_entries('snippets'),'pendingRecording':bool(self.pending),'state':self.state}
     def command(self,name,payload):
         if name=='toggle':self.toggle();return {'state':self.state}
         if name=='snapshot':return self.snapshot()
@@ -101,6 +105,22 @@ class Agent:
         if name=='upsertSnippet':self.storage.upsert_snippet(payload['trigger'],payload['expansion']);return self.snapshot()
         if name=='deleteEntry':self.storage.delete_entry(payload['table'],int(payload['id']));return self.snapshot()
         if name=='clearHistory':self.storage.delete_history();return self.snapshot()
+        if name=='discardRecording':
+            with self.lock:
+                pending,self.pending=self.pending,None
+            if pending:
+                try:os.remove(pending[0])
+                except OSError:pass
+            return self.snapshot()
+        if name=='testMicrophone':
+            if self.state!='idle':raise RuntimeError('Stop dictation before testing the microphone')
+            import numpy as np
+            import sounddevice as sd
+            device=sd.query_devices(kind='input')
+            sample=sd.rec(16000,samplerate=16000,channels=1,dtype='int16')
+            sd.wait()
+            rms=float(np.sqrt(np.mean(sample.astype(np.float32)**2)))
+            return {'device':device['name'],'level':min(1,max(0,(rms-45)/2200)),'rms':round(rms)}
         if name=='retry' and self.pending:
             path,duration=self.pending;self.pending=None;self.set_state('processing','Retrying…');self.worker.submit(self._retry,path,duration);return {'state':self.state}
         return {'state':self.state}
@@ -123,6 +143,10 @@ class Agent:
             if self.closed:return
             self.closed=True; self.state='closed'
         self.audio.recording=False;self.audio.close();self.worker.shutdown(wait=False)
+        if self.pending:
+            try:os.remove(self.pending[0])
+            except OSError:pass
+            self.pending=None
 
 agent=Agent()
 hotkey=WindowsHotkeyConnection(keyboard,agent.toggle)
