@@ -42,7 +42,11 @@ class Agent:
     def emit(self,**message):
         with self.lock: sys.stdout.write(json.dumps(message,ensure_ascii=True)+'\n'); sys.stdout.flush()
     def configure(self):
-        self.transcriber=Transcriber(self.settings.transcription_backend,self.settings.local_model,self.settings.language); self.processor=TextProcessor(self.storage,self.settings.polish_enabled and self.settings.transcription_backend=='groq',self.settings.style)
+        if not hasattr(self,'transcriber') or (self.transcriber.backend,self.transcriber.local_model)!=(self.settings.transcription_backend,self.settings.local_model):
+            self.transcriber=Transcriber(self.settings.transcription_backend,self.settings.local_model,self.settings.language)
+        else:
+            self.transcriber.language=self.settings.language
+        self.processor=TextProcessor(self.storage,self.settings.polish_enabled and self.settings.transcription_backend=='groq',self.settings.style)
     def volume(self,value): self.emit(type='volume',value=min(1,max(0,(float(value)-45)/2200)))
     def set_state(self,value,message=''):
         with self.lock:

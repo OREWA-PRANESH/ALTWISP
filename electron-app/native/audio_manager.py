@@ -20,6 +20,7 @@ class AudioManager:
         self.on_max_duration = None
         self.started_at = None
         self._max_duration_notified = False
+        self._last_volume_emit = 0.0
         self.peak_rms = 0.0
         self._lock = threading.Lock()
 
@@ -29,6 +30,7 @@ class AudioManager:
                 return True
             self.audio_data = []
             self._max_duration_notified = False
+            self._last_volume_emit = 0.0
             self.peak_rms = 0.0
             try:
                 self.stream = sd.InputStream(device=self.input_device, samplerate=self.sample_rate, channels=1, dtype="int16", blocksize=320, callback=self._audio_callback)
@@ -63,8 +65,11 @@ class AudioManager:
                 return
             self.audio_data.append(indata.copy())
             self.peak_rms = max(self.peak_rms, rms)
-            callback = self.on_volume_change
-            reached_max = bool(self.started_at and time.monotonic() - self.started_at >= self.max_seconds and not self._max_duration_notified)
+            now = time.monotonic()
+            callback = self.on_volume_change if now - self._last_volume_emit >= 0.05 else None
+            if callback:
+                self._last_volume_emit = now
+            reached_max = bool(self.started_at and now - self.started_at >= self.max_seconds and not self._max_duration_notified)
             if reached_max:
                 self._max_duration_notified = True
                 self.recording = False
