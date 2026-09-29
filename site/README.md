@@ -4,6 +4,7 @@ Live site: [altwisp.vercel.app](https://altwisp.vercel.app)
 
 This directory contains the static ALTWISP site: HTML, CSS, and JavaScript.
 It is maintained alongside the desktop app but excluded from its package.
+`how-it-works.html` explains the dictation flow, processing choices, privacy, and setup.
 
 For a local preview from the repository root:
 

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090a0b">
+  <meta name="description" content="Learn how ALTWISP records, transcribes, and inserts voice dictation on Windows, and how Groq cloud and local Whisper modes handle your data.">
+  <title>How it works — ALTWISP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="how-it-works.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="cursor-glow" aria-hidden="true"></div>
+  <header class="site-nav">
+    <a class="brand" href="index.html" aria-label="ALTWISP home"><span class="brand-mark"><i></i><i></i><i></i><i></i><i></i></span><span>ALTWISP</span></a>
+    <nav aria-label="Main navigation"><a href="index.html">Home</a><a href="how-it-works.html" aria-current="page">How it works</a><a href="https://github.com/OREWA-PRANESH/ALTWISP" target="_blank" rel="noreferrer">GitHub ↗</a></nav>
+    <a class="nav-cta" href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest" target="_blank" rel="noreferrer">Get the app <span>↗</span></a>
+  </header>
+
+  <main>
+    <section class="how-hero" aria-labelledby="page-title">
+      <div class="how-hero-copy">
+        <p class="eyebrow"><span class="pulse-dot"></span> FROM VOICE TO TEXT</p>
+        <h1 id="page-title">How it<br><em>works.</em></h1>
+        <p class="how-lede">ALTWISP is a Windows dictation app that runs in the tray. It records when you use its shortcut, turns speech into text, and places that text in the app you were already using.</p>
+        <a class="button button-bright" href="#steps">Follow the flow <span>↓</span></a>
+      </div>
+      <div class="flow-diagram" aria-label="Voice is captured, transcribed, then inserted as text">
+        <div class="flow-stage"><span>01 / INPUT</span><strong>YOUR<br>VOICE</strong><span class="voice-bars stage-motion" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><small>Microphone on your PC</small></div>
+        <b aria-hidden="true">↓</b>
+        <div class="flow-stage"><span>02 / RECOGNITION</span><strong>CLOUD<br>OR LOCAL</strong><span class="process-orb stage-motion" aria-hidden="true"></span><small>Your choice in Settings</small></div>
+        <b aria-hidden="true">↓</b>
+        <div class="flow-stage"><span>03 / OUTPUT</span><strong>YOUR<br>WORDS</strong><span class="type-mark stage-motion" aria-hidden="true">Aa<span>_</span></span><small>Into the selected text field</small></div>
+        <button class="replay-flow" type="button">Replay flow <span aria-hidden="true">↻</span></button>
+      </div>
+    </section>
+
+    <section class="how-section" id="steps" aria-labelledby="steps-title">
+      <div class="how-heading"><span class="section-index">01 <span>/</span> THE FLOW</span><div><h2 id="steps-title">One shortcut.<br><em>Three steps.</em></h2><p>Keep the text field you want to use active while ALTWISP works.</p></div></div>
+      <div class="step-list">
+        <article><span class="step-number">01</span><div><h3>Start recording</h3><p>Click a text field, then press and release <strong>Ctrl + Windows</strong>. A small floating orb shows microphone activity without taking focus.</p></div></article>
+        <article><span class="step-number">02</span><div><h3>Speak and stop</h3><p>Speak naturally. Press and release the same shortcut again to stop. ALTWISP sends the recording to your chosen transcription engine.</p></div></article>
+        <article><span class="step-number">03</span><div><h3>Use your words</h3><p>ALTWISP attempts to paste the result into the original app. If the target changed or blocks pasting, open the dashboard to copy the latest transcript.</p></div></article>
+      </div>
+    </section>
+
+    <section class="how-section mode-section" id="modes" aria-labelledby="modes-title">
+      <div class="how-heading"><span class="section-index">02 <span>/</span> YOUR CHOICE</span><div><h2 id="modes-title">Choose where speech<br><em>becomes text.</em></h2><p>Change the engine in Settings. Your choice determines whether recorded audio leaves your computer.</p></div></div>
+      <div class="mode-grid">
+        <article class="mode-card"><span class="mode-label">GROQ / CLOUD</span><h3>Connected speed.</h3><p>ALTWISP sends recorded audio to Groq for transcription. This mode needs an internet connection and your own Groq API key.</p><p>Optional AI polish can also send the recognized text to Groq to refine the writing style.</p></article>
+        <article class="mode-card local"><span class="mode-label">WHISPER / LOCAL</span><h3>On-device recognition.</h3><p>ALTWISP runs Whisper on your PC. The model needs an initial download; afterward, transcription can run offline.</p><p>Local mode disables cloud AI polish. Speed depends on your hardware and the model you choose.</p></article>
+      </div>
+      <div class="privacy-note"><span>DATA PATH</span><p>Transcript history, personal dictionary, snippets, settings, and your API key are stored on your computer. The history database is local; Groq mode still sends audio, and optional cloud polish sends text. You can turn off future history saving in Settings.</p></div>
+    </section>
+
+    <section class="how-section tools-section" aria-labelledby="tools-title">
+      <div class="how-heading"><span class="section-index">03 <span>/</span> EVERYDAY USE</span><div><h2 id="tools-title">Built for the way<br><em>you write.</em></h2><p>The dashboard gives you control without interrupting dictation.</p></div></div>
+      <div class="tool-grid">
+        <article><span>01 / HISTORY</span><h3>Find recent words</h3><p>Review and copy saved transcripts. Clear the history whenever you want.</p></article>
+        <article><span>02 / DICTIONARY</span><h3>Get names right</h3><p>Add spoken phrases and replacements for product names or terms you use often.</p></article>
+        <article><span>03 / SNIPPETS</span><h3>Say less</h3><p>Turn a short spoken trigger into a longer piece of reusable text.</p></article>
+        <article><span>04 / MICROPHONE</span><h3>Check your input</h3><p>Test and select a microphone in Settings when Windows uses the wrong device.</p></article>
+      </div>
+    </section>
+
+    <section class="how-section start-section" aria-labelledby="start-title">
+      <div class="how-heading"><span class="section-index">04 <span>/</span> GET STARTED</span><div><h2 id="start-title">Ready on<br><em>Windows.</em></h2><p>ALTWISP supports Windows 10 and 11 on x64 PCs with a working microphone.</p></div></div>
+      <div class="start-panel"><p>Download the Setup EXE, install it, and allow desktop microphone access in Windows. Choose Groq or local Whisper in Settings, then try a short dictation in Notepad. The GitHub repository is currently private, so release downloads require authorized access.</p><div class="start-actions"><a class="button button-bright" href="https://github.com/OREWA-PRANESH/ALTWISP/releases/latest" target="_blank" rel="noreferrer">View latest release <span>↗</span></a><a class="text-link" href="https://github.com/OREWA-PRANESH/ALTWISP#step-by-step-windows-installation" target="_blank" rel="noreferrer">Read installation guide ↗</a></div></div>
+    </section>
+  </main>
+
+  <footer><a class="brand" href="index.html"><span class="brand-mark"><i></i><i></i><i></i><i></i><i></i></span><span>ALTWISP</span></a><a href="index.html">Back to home ↗</a><a href="https://github.com/OREWA-PRANESH/ALTWISP/blob/main/docs/PRIVACY.md" target="_blank" rel="noreferrer">Privacy details ↗</a><a href="https://github.com/OREWA-PRANESH/ALTWISP" target="_blank" rel="noreferrer">GitHub ↗</a></footer>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="how-it-works.js"></script>
+</body>
+</html>
