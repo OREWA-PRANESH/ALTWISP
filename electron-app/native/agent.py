@@ -1,13 +1,13 @@
 """Headless Windows dictation worker for the Electron shell."""
 import json, logging, os, sys, threading, time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, replace
+from dataclasses import asdict, replace, fields
 from pathlib import Path
 import keyboard
 from dotenv import load_dotenv
 from audio_manager import AudioManager
 from cloud import describe_error
-from config import SettingsStore, app_data_dir, application_dir
+from config import Settings, SettingsStore, validate_settings, app_data_dir, application_dir
 from llm_processor import TextProcessor
 from storage import Storage
 from transcriber import Transcriber
@@ -42,11 +42,14 @@ class Agent:
     def emit(self,**message):
         with self.lock: sys.stdout.write(json.dumps(message,ensure_ascii=True)+'\n'); sys.stdout.flush()
     def configure(self):
-        if not hasattr(self,'transcriber') or (self.transcriber.backend,self.transcriber.local_model)!=(self.settings.transcription_backend,self.settings.local_model):
+        if not hasattr(self,'transcriber') or self.transcriber.backend!=self.settings.transcription_backend or (self.settings.transcription_backend=='local' and self.transcriber.local_model!=self.settings.local_model):
             self.transcriber=Transcriber(self.settings.transcription_backend,self.settings.local_model,self.settings.language)
         else:
             self.transcriber.language=self.settings.language
-        self.processor=TextProcessor(self.storage,self.settings.polish_enabled and self.settings.transcription_backend=='groq',self.settings.style)
+            self.transcriber.local_model=self.settings.local_model
+        if not hasattr(self,'processor'):self.processor=TextProcessor(self.storage)
+        self.processor.polish_enabled=self.settings.polish_enabled and self.settings.transcription_backend=='groq'
+        self.processor.style=self.settings.style
     def volume(self,value): self.emit(type='volume',value=min(1,max(0,(float(value)-45)/2200)))
     def set_state(self,value,message=''):
         with self.lock:
@@ -94,12 +97,18 @@ class Agent:
                 self.emit(type='error',title='Microphone input is too quiet',message='Choose and test the microphone in Settings, then check its input volume and mute state.')
                 return
             raw=self.transcriber.transcribe(path)
+            if self.closed:return
             if not raw:self.set_state('idle','No speech recognized');return
             text=self.processor.process_text(raw) or raw
+            if self.closed:return
             if self.settings.save_history:self.storage.add_history(raw,text,duration)
-            pasted=self.typer.inject_text(text,target_window=self.target)
-            self.emit(type='result',text=text,pasted=bool(pasted)); self.set_state('idle','Text inserted' if pasted else 'Text ready in dashboard')
+            paste_message=''
+            try:pasted=self.typer.inject_text(text,target_window=self.target)
+            except Exception:
+                pasted=False;paste_message='Automatic paste failed. Your transcript is ready to copy from Home.'
+            self.emit(message=paste_message,type='result',text=text,pasted=bool(pasted)); self.set_state('idle','Text inserted' if pasted else 'Text ready in dashboard')
         except Exception as exc:
+            if self.closed:return
             self.pending=(path,duration if 'duration' in locals() else 0) if path else None; self.set_state('idle','Dictation failed'); self.emit(type='error',title='Dictation failed',message=describe_error(exc),retry=bool(path))
         finally:
             if path and (not self.pending or self.pending[0]!=path):
@@ -111,7 +120,14 @@ class Agent:
         if name=='toggle':self.toggle();return {'state':self.state}
         if name=='snapshot':return self.snapshot()
         if name=='saveSettings':
-            allowed={k:v for k,v in payload.items() if hasattr(self.settings,k)}; self.settings=replace(self.settings,**allowed); self.settings_store.save(self.settings); self.audio.input_device=self.settings.input_device; self.configure(); return self.snapshot()
+            with self.lock:
+                if self.state!='idle':raise RuntimeError('Wait for dictation or microphone testing to finish before changing settings')
+                allowed={k:v for k,v in payload.items() if k in {field.name for field in fields(Settings)}}
+                updated=validate_settings(replace(self.settings,**allowed))
+                self.settings_store.save(updated);self.settings=updated
+                self.audio.input_device=updated.input_device;self.audio.max_seconds=updated.max_recording_seconds
+                self.configure()
+            return self.snapshot()
         if name=='listMicrophones':
             import sounddevice as sd
             hostapis=sd.query_hostapis()
@@ -129,31 +145,53 @@ class Agent:
                 except OSError:pass
             return self.snapshot()
         if name=='testMicrophone':
-            if self.state!='idle':raise RuntimeError('Stop dictation before testing the microphone')
-            import numpy as np
-            import sounddevice as sd
-            selected=payload.get('input_device',self.audio.input_device)
-            if selected is not None and (type(selected) is not int or selected<0):raise ValueError('Choose a valid microphone')
-            device=sd.query_devices(selected,kind='input')
-            sample=sd.rec(32000,samplerate=16000,channels=1,dtype='int16',device=selected)
-            sd.wait()
-            rms=float(np.sqrt(np.mean(sample.astype(np.float32)**2)))
-            return {'device':device['name'],'level':min(1,max(0,(rms-45)/2200)),'rms':round(rms)}
-        if name=='retry' and self.pending:
-            path,duration=self.pending;self.pending=None;self.set_state('processing','Retrying…');self.worker.submit(self._retry,path,duration);return {'state':self.state}
+            with self.lock:
+                if self.state!='idle':raise RuntimeError('Stop dictation before testing the microphone')
+                self.state='testing'
+            self.emit(type='state',value='testing',message='Testing microphone…')
+            try:
+                import numpy as np
+                import sounddevice as sd
+                selected=payload.get('input_device',self.audio.input_device)
+                if selected is not None and (type(selected) is not int or selected<0):raise ValueError('Choose a valid microphone')
+                device=sd.query_devices(selected,kind='input')
+                sample=sd.rec(32000,samplerate=16000,channels=1,dtype='int16',device=selected)
+                sd.wait()
+                rms=float(np.sqrt(np.mean(sample.astype(np.float32)**2)))
+                return {'device':device['name'],'level':min(1,max(0,(rms-45)/2200)),'rms':round(rms)}
+            finally:self.set_state('idle','Microphone test complete')
+        if name=='retry':
+            with self.lock:
+                if self.state!='idle':raise RuntimeError('Wait for the current recording to finish')
+                if not self.pending:raise RuntimeError('No recording is available to retry')
+                path,duration=self.pending;self.pending=None;self.state='processing'
+            self.emit(type='state',value='processing',message='Retrying…');self.worker.submit(self._retry,path,duration);return {'state':self.state}
         return {'state':self.state}
     def _retry(self,path,duration):
         try:
             raw=self.transcriber.transcribe(path)
+            if self.closed:
+                try:os.remove(path)
+                except OSError:pass
+                return
             if not raw:
                 self.set_state('idle','No speech recognized')
                 try:os.remove(path)
                 except OSError:pass
                 return
             text=self.processor.process_text(raw) or raw
+            if self.closed:
+                try:os.remove(path)
+                except OSError:pass
+                return
             if self.settings.save_history:self.storage.add_history(raw,text,duration)
             self.emit(type='result',text=text,pasted=False);self.set_state('idle','Text ready in dashboard')
-        except Exception as exc:self.pending=(path,duration);self.set_state('idle','Retry failed');self.emit(type='error',title='Retry failed',message=describe_error(exc),retry=True);return
+        except Exception as exc:
+            if self.closed:
+                try:os.remove(path)
+                except OSError:pass
+                return
+            self.pending=(path,duration);self.set_state('idle','Retry failed');self.emit(type='error',title='Retry failed',message=describe_error(exc),retry=True);return
         try:os.remove(path)
         except OSError:pass
     def close(self):
@@ -166,20 +204,29 @@ class Agent:
             except OSError:pass
             self.pending=None
 
-agent=Agent()
-hotkey=WindowsHotkeyConnection(keyboard,agent.toggle)
-try:
-    hotkey.start()
-    agent.emit(type='hotkey',value='ready',message='Ctrl + Windows connected')
-    agent.emit(type='state',value='idle',message='Ready when you are')
-except Exception as exc:
-    agent.emit(type='hotkey',value='error',message=describe_error(exc))
-    agent.emit(type='state',value='idle',message='Hotkey unavailable; use the tray control')
-for line in sys.stdin:
+
+def main():
+    agent=Agent()
+    hotkey=WindowsHotkeyConnection(keyboard,agent.toggle)
     try:
-        msg=json.loads(line); name=msg.get('name','');
-        if name=='quit':break
-        data=agent.command(name,msg.get('payload') or {}); agent.emit(replyTo=msg.get('id'),ok=True,data=data)
-    except Exception as exc:agent.emit(replyTo=msg.get('id') if 'msg' in locals() else None,ok=False,error=describe_error(exc))
-hotkey.close()
-agent.close()
+        hotkey.start()
+        agent.emit(type='hotkey',value='ready',message='Ctrl + Windows connected')
+        agent.emit(type='state',value='idle',message='Ready when you are')
+    except Exception as exc:
+        agent.emit(type='hotkey',value='error',message=describe_error(exc))
+        agent.emit(type='state',value='idle',message='Hotkey unavailable; use the tray control')
+    for line in sys.stdin:
+        msg={}
+        try:
+            msg=json.loads(line)
+            if not isinstance(msg,dict) or not isinstance(msg.get('payload') or {},dict):raise ValueError('Invalid worker command')
+            name=msg.get('name','');
+            if name=='quit':break
+            data=agent.command(name,msg.get('payload') or {}); agent.emit(replyTo=msg.get('id'),ok=True,data=data)
+        except Exception as exc:agent.emit(replyTo=msg.get('id') if isinstance(msg,dict) else None,ok=False,error=describe_error(exc))
+    hotkey.close()
+    agent.close()
+
+
+if __name__ == "__main__":
+    main()

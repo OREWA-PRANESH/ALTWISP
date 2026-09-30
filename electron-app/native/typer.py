@@ -1,3 +1,4 @@
+import logging
 import time
 
 import pyautogui
@@ -30,4 +31,4 @@ class Typer:
                     if pyperclip.paste() == text:
                         pyperclip.copy(original)
                 except Exception as exc:
-                    print(f"Could not restore clipboard: {exc}")
+                    logging.warning("Could not restore clipboard (%s)", type(exc).__name__)

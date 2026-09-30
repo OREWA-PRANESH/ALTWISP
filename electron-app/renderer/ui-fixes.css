@@ -1,2 +1,16 @@
-html,body,main{scrollbar-width:none}html::-webkit-scrollbar,body::-webkit-scrollbar,main::-webkit-scrollbar{display:none;width:0;height:0}.hero .mini-orb{overflow:hidden}.hero .mini-orb::after{inset:40% -18% -20%;transform:rotate(-13deg)}.hero .mini-fluid{position:absolute;width:150%;height:72%;left:-25%;top:40%;border-radius:44%;background:linear-gradient(100deg,#0ce0d0,#00aeea 55%,#3f57ff);transform:rotate(-4deg)}
+.hero .mini-orb{overflow:hidden}.hero .mini-orb::after{inset:40% -18% -20%;transform:rotate(-13deg)}.hero .mini-fluid{position:absolute;width:150%;height:72%;left:-25%;top:40%;border-radius:44%;background:linear-gradient(100deg,#0ce0d0,#00aeea 55%,#3f57ff);transform:rotate(-4deg)}
 .mic-card{padding:16px 21px}.mic-card h3{margin:0 0 10px}.mic-card p{margin:8px 0 0}.mic-meter{height:12px;border-radius:99px;background:#e5e9f4;overflow:hidden}.mic-meter span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#536dfe,#00d8cb);transition:width 60ms linear}.recovery{border-color:#e7bc80;background:#fffaf1}.recovery h3{margin:0 0 6px}.recovery p{margin:0 0 12px}
+
+main{scrollbar-width:thin;scrollbar-color:#c3cbe0 transparent;min-width:0}
+main::-webkit-scrollbar{width:7px}main::-webkit-scrollbar-thumb{background:#c3cbe0;border-radius:9px}
+.hero{padding-right:170px}.hero .mini-orb{right:32px}.hero p{max-width:100%}
+header{gap:18px}header>div:first-child{min-width:0}.status{flex-shrink:0;max-width:210px}
+.status small{overflow-wrap:anywhere}.status.unavailable>span{background:#d45c5c;box-shadow:0 0 0 4px #ffe5e5}
+.table{table-layout:fixed}.table td{overflow-wrap:anywhere}.table th:first-child{width:140px}.table th:last-child{width:65px}.table td:last-child{width:80px}
+.toggle b{font-size:12px}.toggle small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.field{min-width:0}.field input,.field select{width:100%;min-width:0}
+button:disabled,select:disabled,input:disabled{opacity:.55;cursor:default}.button:disabled:hover{transform:none}
+button:focus-visible{outline:2px solid #778aff;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){#page,.status>span{animation:none}.mic-meter span,.toast,.nav-button{transition:none}}
+
+#inputDevice{display:block;width:100%;max-width:100%;margin:12px 0}.card-head{gap:12px}.card p{overflow-wrap:anywhere}

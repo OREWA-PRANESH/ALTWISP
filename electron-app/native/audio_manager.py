@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 import threading
@@ -58,7 +59,7 @@ class AudioManager:
     def _audio_callback(self, indata, frames, callback_time, status):
         del frames, callback_time
         if status:
-            print(f"Audio status: {status}")
+            logging.warning("Audio status: %s", status)
         rms = float(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
         with self._lock:
             if not self.recording:

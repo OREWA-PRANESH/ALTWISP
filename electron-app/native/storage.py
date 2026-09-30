@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -10,17 +11,30 @@ from config import app_data_dir
 class Storage:
     def __init__(self, path: Path | None = None):
         self.path = path or app_data_dir() / "altwisp.db"
+        self._lock = threading.RLock()
+        self._cache = {}
         self._initialize()
 
     @contextmanager
     def _connect(self):
-        connection = sqlite3.connect(self.path, timeout=10)
-        connection.row_factory = sqlite3.Row
-        try:
-            yield connection
-            connection.commit()
-        finally:
-            connection.close()
+        with self._lock:
+            connection = sqlite3.connect(self.path, timeout=10)
+            connection.row_factory = sqlite3.Row
+            connection.create_function("word_count", 1, lambda text: len((text or "").split()))
+            try:
+                yield connection
+                connection.commit()
+                if connection.total_changes:
+                    self._cache.clear()
+            finally:
+                connection.close()
+
+    def _cached(self, key, query):
+        with self._lock:
+            if key not in self._cache:
+                self._cache[key] = query()
+            value = self._cache[key]
+            return dict(value) if isinstance(value, dict) else [dict(row) for row in value]
 
     def _initialize(self):
         with self._connect() as db:
@@ -57,17 +71,20 @@ class Storage:
             )
 
     def recent_history(self, limit=100):
-        with self._connect() as db:
-            return [dict(row) for row in db.execute("SELECT * FROM history ORDER BY id DESC LIMIT ?", (limit,))]
+        def query():
+            with self._connect() as db:
+                return [dict(row) for row in db.execute("SELECT * FROM history ORDER BY id DESC LIMIT ?", (limit,))]
+        # Only cache the bounded dashboard view; exports should not retain all transcripts.
+        return self._cached(("history", limit), query) if 0 <= limit <= 100 else query()
 
     def stats(self):
-        with self._connect() as db:
-            row = db.execute(
-                "SELECT COUNT(*) AS dictations, COALESCE(SUM(duration_seconds), 0) AS seconds, "
-                "COALESCE(SUM(LENGTH(TRIM(final_text)) - LENGTH(REPLACE(TRIM(final_text), ' ', '')) + 1), 0) AS words "
-                "FROM history WHERE final_text <> ''"
-            ).fetchone()
-            return dict(row)
+        def query():
+            with self._connect() as db:
+                return dict(db.execute(
+                    "SELECT COUNT(*) AS dictations, COALESCE(SUM(duration_seconds), 0) AS seconds, "
+                    "COALESCE(SUM(word_count(final_text)), 0) AS words FROM history WHERE final_text <> ''"
+                ).fetchone())
+        return self._cached("stats", query)
 
     def delete_history(self):
         with self._connect() as db:
@@ -83,8 +100,10 @@ class Storage:
     def list_entries(self, table):
         if table not in {"dictionary", "snippets"}:
             raise ValueError("Unsupported table")
-        with self._connect() as db:
-            return [dict(row) for row in db.execute(f"SELECT * FROM {table} ORDER BY id DESC")]
+        def query():
+            with self._connect() as db:
+                return [dict(row) for row in db.execute(f"SELECT * FROM {table} ORDER BY id DESC")]
+        return self._cached(table, query)
 
     def upsert_dictionary(self, spoken, replacement):
         with self._connect() as db:
