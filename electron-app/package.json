@@ -23,7 +23,7 @@
     "test:app": "electron tests/app-runtime.cjs"
   },
   "devDependencies": {
-    "electron": "^44.4.5",
+    "electron": "^45.1.0",
     "electron-builder": "^26.0.12"
   },
   "build": {
