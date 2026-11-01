@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "electron": "^44.4.5",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.18.0"
   },
   "build": {
     "appId": "com.altwisp.desktop",
